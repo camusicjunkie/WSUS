@@ -85,9 +85,6 @@ function New-FakeWsusServer {
         $this.Calls.Add('StartSynchronizationForCategoryOnly'); $this.PollsLeft = $this.PollsPerSync
         foreach ($title in $this.Owner.PendingCategories) { $this.Owner.CategoryList.Add([PSCustomObject] @{ Title = $title }) }
     }
-    $subscription | Add-Member -NotePropertyName SynchronizeAutomatically -NotePropertyValue $false
-    $subscription | Add-Member -NotePropertyName SynchronizeAutomaticallyTimeOfDay -NotePropertyValue ([timespan]::Zero)
-    $subscription | Add-Member -NotePropertyName NumberOfSynchronizationsPerDay -NotePropertyValue 0
     $subscription | Add-Member -NotePropertyName UpdateCategories -NotePropertyValue @()
     $subscription | Add-Member -NotePropertyName UpdateClassifications -NotePropertyValue @()
     $subscription | Add-Member -MemberType ScriptMethod -Name SetUpdateCategories -Value {
@@ -96,7 +93,6 @@ function New-FakeWsusServer {
     $subscription | Add-Member -MemberType ScriptMethod -Name SetUpdateClassifications -Value {
         param ($Collection) $this.UpdateClassifications = @($Collection | ForEach-Object Title)
     }
-    $subscription | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add('Subscription.Save') }
     $subscription | Add-Member -MemberType ScriptMethod -Name GetSynchronizationStatus -Value {
         if ($this.PollsLeft -gt 0) { $this.PollsLeft--; 'Running' } else { 'NotProcessing' }
     }
