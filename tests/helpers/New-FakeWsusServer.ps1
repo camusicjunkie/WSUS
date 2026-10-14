@@ -138,20 +138,5 @@ function New-FakeWsusServer {
     $fake | Add-Member -MemberType ScriptMethod -Name GetSubscription -Value {
         $this.Calls.Add('GetSubscription'); $this.Subscription
     }
-    $fake | Add-Member -MemberType ScriptMethod -Name GetComputerTargetGroups -Value { $this.Groups }
-    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateClassifications -Value { $this.Classifications }
-    # Returns every update in $fake.Updates; the real server filters by scope, the fake only records it.
-    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Value {
-        param ($scope)
-        $this.LastScope = $scope
-        $this.Updates.ToArray()
-    }
-    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateClassifications -Value { $this.Classifications }
-    # Returns every update in $fake.Updates; the real server filters by scope, the fake only records it.
-    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Value {
-        param ($scope)
-        $this.LastScope = $scope
-        $this.Updates.ToArray()
-    }
     $fake
 }
