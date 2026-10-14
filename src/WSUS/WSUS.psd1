@@ -12,6 +12,8 @@
     # Hand-listed: must match the files in Public/ (checked by tests/Module.Tests.ps1).
     FunctionsToExport     = @(
         'Get-WsusNodeStatus'
+        'Install-WsusNode'
+        'Set-WsusNodeConfig'
     )
     CmdletsToExport       = @()
     VariablesToExport     = @()
