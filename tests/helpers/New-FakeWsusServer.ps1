@@ -27,7 +27,8 @@ function New-FakeWsusServer {
         [string[]] $ComputerGroups = @('All Computers', 'Unassigned Computers'),
         # Shorthand for enabled rules by name only (appended to -Rules).
         [string[]] $ApprovalRules = @(),
-        [int] $ApprovalCount = 0
+        [int] $ApprovalCount = 0,
+        [string[]] $Classifications = @('Critical Updates', 'Security Updates', 'Definition Updates')
     )
 
     $calls = [System.Collections.Generic.List[string]]::new()
@@ -103,8 +104,11 @@ function New-FakeWsusServer {
         Config       = $config
         Subscription = $subscription
         Rules        = @($ruleObjects)
-        Updates      = @($updateObjects)
+        Classifications = @($Classifications | ForEach-Object { [PSCustomObject] @{ Title = $_ } })
+        Updates      = [System.Collections.Generic.List[object]]::new()
+        LastScope    = $null
     }
+    foreach ($u in $updateObjects) { $fake.Updates.Add($u) }
     $fake | Add-Member -MemberType ScriptMethod -Name GetInstallApprovalRules -Value {
         $this.Calls.Add('GetInstallApprovalRules'); $this.Rules
     }
@@ -120,12 +124,34 @@ function New-FakeWsusServer {
         }
     }
     $fake | Add-Member -MemberType ScriptMethod -Name GetComputerTargetGroups -Value { $this.Groups }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateClassifications -Value { $this.Classifications }
+    # Returns every update in $fake.Updates; the real server filters by scope, the fake only records it.
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Value {
+        param ($scope)
+        $this.LastScope = $scope
+        $this.Updates.ToArray()
+    }
     $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateApprovals -Value { param($scope) $null = $scope; $this.Approvals }
     $fake | Add-Member -MemberType ScriptMethod -Name GetConfiguration -Value {
         $this.Calls.Add('GetConfiguration'); $this.Config
     }
     $fake | Add-Member -MemberType ScriptMethod -Name GetSubscription -Value {
         $this.Calls.Add('GetSubscription'); $this.Subscription
+    }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetComputerTargetGroups -Value { $this.Groups }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateClassifications -Value { $this.Classifications }
+    # Returns every update in $fake.Updates; the real server filters by scope, the fake only records it.
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Value {
+        param ($scope)
+        $this.LastScope = $scope
+        $this.Updates.ToArray()
+    }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateClassifications -Value { $this.Classifications }
+    # Returns every update in $fake.Updates; the real server filters by scope, the fake only records it.
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Value {
+        param ($scope)
+        $this.LastScope = $scope
+        $this.Updates.ToArray()
     }
     $fake
 }
