@@ -20,6 +20,8 @@ All notable changes to the WSUS module are recorded here. The format follows
 - `Approve-WsusRing` promotes updates from one ring to the next only when they pass the gate, returning one `WSUS.RingApproval` row per update; replaces `8-Approve-WsusRing.ps1`.
 - `Register-WsusMaintenanceTask` and `Unregister-WsusMaintenanceTask`: create or remove the fixed-name SYSTEM `WSUS Maintenance` and `WSUS Decline Unwanted` tasks (replace on re-register, all-users install preflight).
 
+- README runbook rewritten around function calls: initial build, scheduled tasks, monthly cycle, per-ring client GPO settings table, module install and release runbook.
+
 ### Removed
 
 - `1-Install-WsusNode.ps1` and `2-Set-WsusNodeConfig.ps1`, replaced by `Install-WsusNode` and `Set-WsusNodeConfig`.
