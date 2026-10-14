@@ -14,7 +14,10 @@ function New-FakeWsusServer {
         [bool] $IsReplica = $false,
         [string] $ContentPath = 'D:\WSUS',
         [Nullable[datetime]] $LastSyncStart = [datetime] '2026-10-12T02:00:00',
-        [string] $LastSyncResult = 'Succeeded'
+        [string] $LastSyncResult = 'Succeeded',
+        [switch] $SyncRunning,
+        [int] $SyncPolls = 1,
+        [string] $LastSyncError
     )
 
     $calls = [System.Collections.Generic.List[string]]::new()
@@ -25,15 +28,25 @@ function New-FakeWsusServer {
     }
 
     $syncInfo = if ($null -ne $LastSyncStart) {
-        [PSCustomObject] @{ StartTime = $LastSyncStart; EndTime = $LastSyncStart.AddMinutes(30); Result = $LastSyncResult }
+        [PSCustomObject] @{ StartTime = $LastSyncStart; EndTime = $LastSyncStart.AddMinutes(30); Result = $LastSyncResult; Error = $LastSyncError }
     }
 
-    $subscription = [PSCustomObject] @{ Calls = $calls; SyncInfo = $syncInfo }
+    $subscription = [PSCustomObject] @{ Calls = $calls; SyncInfo = $syncInfo; PollsPerSync = $SyncPolls; PollsLeft = $(if ($SyncRunning) { $SyncPolls } else { 0 }) }
     $subscription | Add-Member -MemberType ScriptMethod -Name GetLastSynchronizationInfo -Value {
         $this.Calls.Add('GetLastSynchronizationInfo'); $this.SyncInfo
     }
     $subscription | Add-Member -MemberType ScriptMethod -Name StartSynchronization -Value {
-        $this.Calls.Add('StartSynchronization')
+        $this.Calls.Add('StartSynchronization'); $this.PollsLeft = $this.PollsPerSync
+    }
+
+    $subscription | Add-Member -MemberType ScriptMethod -Name StartSynchronizationForCategoryOnly -Value {
+        $this.Calls.Add('StartSynchronizationForCategoryOnly'); $this.PollsLeft = $this.PollsPerSync
+    }
+    $subscription | Add-Member -MemberType ScriptMethod -Name GetSynchronizationStatus -Value {
+        if ($this.PollsLeft -gt 0) { $this.PollsLeft--; 'Running' } else { 'NotProcessing' }
+    }
+    $subscription | Add-Member -MemberType ScriptMethod -Name GetSynchronizationProgress -Value {
+        [PSCustomObject] @{ ProcessedItems = 5; TotalItems = 10 }
     }
 
     $fake = [PSCustomObject] @{

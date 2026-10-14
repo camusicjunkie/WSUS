@@ -13,6 +13,7 @@
     FunctionsToExport     = @(
         'Get-WsusNodeStatus'
         'New-WsusAdminGroup'
+        'Start-WsusSync'
     )
     CmdletsToExport       = @()
     VariablesToExport     = @()
