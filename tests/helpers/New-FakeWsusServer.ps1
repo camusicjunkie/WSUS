@@ -14,7 +14,14 @@ function New-FakeWsusServer {
         [bool] $IsReplica = $false,
         [string] $ContentPath = 'D:\WSUS',
         [Nullable[datetime]] $LastSyncStart = [datetime] '2026-10-12T02:00:00',
-        [string] $LastSyncResult = 'Succeeded'
+        [string] $LastSyncResult = 'Succeeded',
+        [switch] $SyncRunning,
+        [int] $SyncPolls = 1,
+        [string] $LastSyncError,
+        # Approval rules as @{ Name = ...; Enabled = ... } hashtables (IInstallApprovalRule fakes).
+        [hashtable[]] $Rules = @(),
+        # Updates as @{ Title = ...; Kb = @('5001234'); IsDeclined = $false } hashtables (IUpdate fakes).
+        [hashtable[]] $Updates = @()
     )
 
     $calls = [System.Collections.Generic.List[string]]::new()
@@ -25,15 +32,44 @@ function New-FakeWsusServer {
     }
 
     $syncInfo = if ($null -ne $LastSyncStart) {
-        [PSCustomObject] @{ StartTime = $LastSyncStart; EndTime = $LastSyncStart.AddMinutes(30); Result = $LastSyncResult }
+        [PSCustomObject] @{ StartTime = $LastSyncStart; EndTime = $LastSyncStart.AddMinutes(30); Result = $LastSyncResult; Error = $LastSyncError }
     }
 
-    $subscription = [PSCustomObject] @{ Calls = $calls; SyncInfo = $syncInfo }
+    $subscription = [PSCustomObject] @{ Calls = $calls; SyncInfo = $syncInfo; PollsPerSync = $SyncPolls; PollsLeft = $(if ($SyncRunning) { $SyncPolls } else { 0 }) }
     $subscription | Add-Member -MemberType ScriptMethod -Name GetLastSynchronizationInfo -Value {
         $this.Calls.Add('GetLastSynchronizationInfo'); $this.SyncInfo
     }
     $subscription | Add-Member -MemberType ScriptMethod -Name StartSynchronization -Value {
-        $this.Calls.Add('StartSynchronization')
+        $this.Calls.Add('StartSynchronization'); $this.PollsLeft = $this.PollsPerSync
+    }
+
+    $subscription | Add-Member -MemberType ScriptMethod -Name StartSynchronizationForCategoryOnly -Value {
+        $this.Calls.Add('StartSynchronizationForCategoryOnly'); $this.PollsLeft = $this.PollsPerSync
+    }
+    $subscription | Add-Member -MemberType ScriptMethod -Name GetSynchronizationStatus -Value {
+        if ($this.PollsLeft -gt 0) { $this.PollsLeft--; 'Running' } else { 'NotProcessing' }
+    }
+    $subscription | Add-Member -MemberType ScriptMethod -Name GetSynchronizationProgress -Value {
+        [PSCustomObject] @{ ProcessedItems = 5; TotalItems = 10 }
+    }
+
+    $ruleObjects = foreach ($rule in $Rules) {
+        $r = [PSCustomObject] @{ Name = $rule.Name; Enabled = [bool] $rule.Enabled; Calls = $calls }
+        $r | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add("Rule.Save:$($this.Name)") }
+        $r
+    }
+
+    $updateObjects = foreach ($update in $Updates) {
+        $u = [PSCustomObject] @{
+            Title                 = $update.Title
+            KnowledgebaseArticles = [string[]] $update.Kb
+            IsDeclined            = [bool] $update.IsDeclined
+            Calls                 = $calls
+        }
+        $u | Add-Member -MemberType ScriptMethod -Name Decline -Value {
+            $this.Calls.Add("Update.Decline:$($this.Title)"); $this.IsDeclined = $true
+        }
+        $u
     }
 
     $fake = [PSCustomObject] @{
@@ -41,6 +77,20 @@ function New-FakeWsusServer {
         Calls        = $calls
         Config       = $config
         Subscription = $subscription
+        Rules        = @($ruleObjects)
+        Updates      = @($updateObjects)
+    }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetInstallApprovalRules -Value {
+        $this.Calls.Add('GetInstallApprovalRules'); $this.Rules
+    }
+    # Like the real API: SearchUpdates is a substring match on title and KB, which is why
+    # Deny-WsusUpdate re-filters to exact KB hits.
+    $fake | Add-Member -MemberType ScriptMethod -Name SearchUpdates -Value {
+        param ($Text)
+        $this.Calls.Add("SearchUpdates:$Text")
+        $this.Updates | Where-Object {
+            $_.Title -like "*$Text*" -or @($_.KnowledgebaseArticles | Where-Object { $_ -like "*$Text*" }).Count -gt 0
+        }
     }
     $fake | Add-Member -MemberType ScriptMethod -Name GetConfiguration -Value {
         $this.Calls.Add('GetConfiguration'); $this.Config

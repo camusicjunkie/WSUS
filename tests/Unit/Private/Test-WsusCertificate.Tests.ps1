@@ -10,7 +10,7 @@ AfterAll {
 # tests mock it, so the rules are tested here with fake certificate objects.
 Describe 'Test-WsusCertificate' {
     BeforeAll {
-        function New-FakeCert {
+        function Get-FakeCert {
             param (
                 [bool] $HasPrivateKey = $true,
                 [datetime] $NotAfter = (Get-Date).AddDays(365),
@@ -29,7 +29,7 @@ Describe 'Test-WsusCertificate' {
     }
 
     It 'accepts a valid certificate' {
-        Mock -ModuleName WSUS Get-Item { New-FakeCert }
+        Mock -ModuleName WSUS Get-Item { Get-FakeCert }
 
         { InModuleScope WSUS -Parameters @{ T = $script:thumb; N = $script:names } {
             Test-WsusCertificate -Thumbprint $T -RequiredName $N
@@ -46,7 +46,7 @@ Describe 'Test-WsusCertificate' {
 
     It 'lists every problem in one error' {
         Mock -ModuleName WSUS Get-Item {
-            New-FakeCert -HasPrivateKey $false -NotAfter (Get-Date).AddDays(10) -Eku '1.3.6.1.5.5.7.3.2' -San 'wsus.contoso.local'
+            Get-FakeCert -HasPrivateKey $false -NotAfter (Get-Date).AddDays(10) -Eku '1.3.6.1.5.5.7.3.2' -San 'wsus.contoso.local'
         }
 
         $thrown = $null
