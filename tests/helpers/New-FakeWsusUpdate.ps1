@@ -53,7 +53,9 @@ function New-FakeWsusUpdate {
         if ($this.Approvals.ContainsKey($group.Name)) { $this.Approvals[$group.Name].ToArray() }
     }
     $update | Add-Member -MemberType ScriptMethod -Name GetSummaryForComputerTargetGroup -Value {
-        param ($group) $this.Summary
+        param ($group)
+        $null = $group
+        $this.Summary
     }
     $update | Add-Member -MemberType ScriptMethod -Name AcceptLicenseAgreement -Value {
         $this.Calls.Add("AcceptLicenseAgreement $($this.Title)")
