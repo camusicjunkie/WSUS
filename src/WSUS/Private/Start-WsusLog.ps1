@@ -1,0 +1,23 @@
+function Start-WsusLog {
+    <#
+    .SYNOPSIS
+        Creates the log folder, starts a transcript and returns the transcript path.
+    .DESCRIPTION
+        Used only by Invoke-WsusMaintenance ('maint') and Invoke-WsusDecline ('decline'). The caller
+        keeps its own try/finally and calls Stop-WsusLog. Not subject to -WhatIf: a log of a
+        -WhatIf run is still wanted.
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory)]
+        [string] $Prefix,
+
+        [string] $Path = 'C:\ProgramData\WsusMaintenance'
+    )
+
+    $null = New-Item -ItemType Directory -Path $Path -Force -WhatIf:$false
+    $transcript = Join-Path -Path $Path -ChildPath ('{0}_{1:yyyyMMdd_HHmm}.log' -f $Prefix, (Get-Date))
+    $null = Start-Transcript -Path $transcript -WhatIf:$false
+    $transcript
+}

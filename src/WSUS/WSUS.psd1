@@ -15,6 +15,8 @@
         'Deny-WsusUpdate'
         'Enable-WsusApprovalRule'
         'Get-WsusNodeStatus'
+        'Invoke-WsusDecline'
+        'Invoke-WsusMaintenance'
         'New-WsusAdminGroup'
         'Start-WsusSync'
     )

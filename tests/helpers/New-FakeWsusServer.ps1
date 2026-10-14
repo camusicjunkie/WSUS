@@ -20,7 +20,7 @@ function New-FakeWsusServer {
         [string] $LastSyncError,
         # Approval rules as @{ Name = ...; Enabled = ... } hashtables (IInstallApprovalRule fakes).
         [hashtable[]] $Rules = @(),
-        # Updates as @{ Title = ...; Kb = @('5001234'); IsDeclined = $false } hashtables (IUpdate fakes).
+        # Updates as @{ Title = ...; Kb = @('5001234'); IsDeclined; IsSuperseded; ArrivalDate (default now UTC) } hashtables.
         [hashtable[]] $Updates = @()
     )
 
@@ -64,6 +64,8 @@ function New-FakeWsusServer {
             Title                 = $update.Title
             KnowledgebaseArticles = [string[]] $update.Kb
             IsDeclined            = [bool] $update.IsDeclined
+            IsSuperseded          = [bool] $update.IsSuperseded
+            ArrivalDate           = $(if ($update.ArrivalDate) { [datetime] $update.ArrivalDate } else { [datetime]::UtcNow })
             Calls                 = $calls
         }
         $u | Add-Member -MemberType ScriptMethod -Name Decline -Value {
@@ -91,6 +93,12 @@ function New-FakeWsusServer {
         $this.Updates | Where-Object {
             $_.Title -like "*$Text*" -or @($_.KnowledgebaseArticles | Where-Object { $_ -like "*$Text*" }).Count -gt 0
         }
+    }
+    # Like the real API: the scope's FromArrivalDate bounds the result (UpdateScope default is MinValue).
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Value {
+        param ($Scope)
+        $this.Calls.Add('GetUpdates')
+        $this.Updates | Where-Object { $_.ArrivalDate -ge $Scope.FromArrivalDate }
     }
     $fake | Add-Member -MemberType ScriptMethod -Name GetConfiguration -Value {
         $this.Calls.Add('GetConfiguration'); $this.Config

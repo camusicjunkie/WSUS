@@ -67,4 +67,12 @@ namespace Microsoft.UpdateServices.Administration {
 '@
 }
 
+if (-not ('Microsoft.UpdateServices.Administration.UpdateScope' -as [type])) {
+    Add-Type -TypeDefinition @'
+namespace Microsoft.UpdateServices.Administration {
+    public class UpdateScope { public System.DateTime FromArrivalDate = System.DateTime.MinValue; }
+}
+'@
+}
+
 Export-ModuleMember -Function *
