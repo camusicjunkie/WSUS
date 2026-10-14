@@ -14,6 +14,8 @@ function Set-WsusApprovalRuleDefinition {
     .PARAMETER GroupName
         Names of the computer groups the rule approves for.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'Private helper; the public caller wraps it in ShouldProcess.')]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]

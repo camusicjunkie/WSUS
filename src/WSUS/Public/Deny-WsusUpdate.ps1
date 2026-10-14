@@ -37,7 +37,7 @@ function Deny-WsusUpdate {
 
     begin {
         Assert-WsusPrerequisite -Module UpdateServices
-        $wsus = Connect-WsusNode -Port $Port
+        $wsus = Connect-WsusNode -Server $WsusServer -Port $Port
         Assert-WsusUpstream -Wsus $wsus
     }
 
