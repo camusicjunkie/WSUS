@@ -18,8 +18,10 @@
         'Enable-WsusApprovalRule'
         'Get-WsusNodeStatus'
         'New-WsusAdminGroup'
+        'Register-WsusMaintenanceTask'
         'Set-WsusReplicaConfig'
         'Start-WsusSync'
+        'Unregister-WsusMaintenanceTask'
     )
     CmdletsToExport       = @()
     VariablesToExport     = @()
