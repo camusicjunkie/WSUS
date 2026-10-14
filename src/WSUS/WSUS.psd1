@@ -11,6 +11,9 @@
 
     # Hand-listed: must match the files in Public/ (checked by tests/Module.Tests.ps1).
     FunctionsToExport     = @(
+        'Disable-WsusApprovalRule'
+        'Deny-WsusUpdate'
+        'Enable-WsusApprovalRule'
         'Get-WsusNodeStatus'
         'New-WsusAdminGroup'
         'Start-WsusSync'
