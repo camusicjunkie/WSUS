@@ -30,6 +30,8 @@ function Invoke-WsusDecline {
     .OUTPUTS
         WSUS.DeclineRun
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '',
+        Justification = 'ShouldProcess is called per decline by Invoke-WsusDeclinePass, which inherits the -WhatIf and -Confirm.')]
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('WSUS.DeclineRun')]
     param (

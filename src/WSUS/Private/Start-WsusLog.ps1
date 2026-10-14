@@ -7,6 +7,8 @@ function Start-WsusLog {
         keeps its own try/finally and calls Stop-WsusLog. Not subject to -WhatIf: a log of a
         -WhatIf run is still wanted.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'Writes the run transcript; it must happen under -WhatIf too, so ShouldProcess would defeat it.')]
     [CmdletBinding()]
     [OutputType([string])]
     param (

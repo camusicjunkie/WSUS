@@ -7,6 +7,8 @@ function Stop-WsusLog {
         the transcript even if retention fails. Call it from the caller's finally block. Retention
         is not subject to -WhatIf.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'Closes the run transcript and applies retention; it must happen under -WhatIf too.')]
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
