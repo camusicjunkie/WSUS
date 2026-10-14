@@ -19,7 +19,7 @@ Computer groups: `Packer`, `Pilot`, `Workstations`, `Servers`, `VDI-Definitions`
 | 3 | `3-Configure-WsusUpstream.ps1` | WSUS01 (the upstream) | WSUS admin | Once, and when products, classifications, groups or rules change |
 | 4 | `4-Configure-WsusReplica.ps1` | WSUS02 (the replica) | WSUS admin | Once, or `-Promote` if WSUS01 is lost |
 | 5 | `5-Invoke-WsusMaintenance.ps1` | Both nodes | SYSTEM, scheduled task | Weekly, plus `-DeclineOnly` every 15 minutes |
-| 6 | `6-netscaler-wsus.conf` | NetScaler CLI | NetScaler admin | Once |
+| 6 | `docs/6-netscaler-wsus.conf` | NetScaler CLI | NetScaler admin | Once |
 | 7 | `7-New-WsusClientGpo.ps1` | Admin workstation | GPO admin | Once, and when OUs, days or the WSUS URL change |
 | 8 | `8-Approve-WsusRing.ps1` | WSUS01 (the upstream) | WSUS admin | Monthly, week 2 |
 
@@ -61,7 +61,7 @@ Every PowerShell script supports `-WhatIf`. Run that first, every time.
 | 9 | WSUS02 | `.\2-Set-WsusNodeConfig.ps1 -SslCertThumbprint <WSUS02 thumb> -VipFqdn wsus.corp.local` |
 | 10 | WSUS02 | `.\4-Configure-WsusReplica.ps1 -UpstreamFqdn wsus01.corp.local -SyncNow` |
 | 11 | Both nodes | Register the two scheduled tasks (commands in the help of script 5). Weekly at 02:00 on WSUS01, 04:00 on WSUS02. |
-| 12 | NetScaler | Apply `6-netscaler-wsus.conf` (edit IPs first) |
+| 12 | NetScaler | Apply `docs/6-netscaler-wsus.conf` (edit IPs first) |
 | 13 | Admin workstation | `.\7-New-WsusClientGpo.ps1 -WorkstationOU <dn> -ServerOU <dn> -VdiOU <dn>` |
 | 14 | One client per GPO | `gpupdate /force`, then `(New-Object -ComObject Microsoft.Update.AutoUpdate).DetectNow()`. Confirm it shows up in the right group on WSUS01. |
 
