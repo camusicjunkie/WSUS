@@ -17,4 +17,10 @@ function Add-ADGroupMember {
     param ([Parameter(Mandatory, Position = 0)] $Identity, [Parameter(Mandatory, Position = 1)] $Members)
     throw 'Stub Add-ADGroupMember called: mock it.'
 }
+
+function Get-ADGroupMember {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory, Position = 0)] $Identity)
+    throw 'Stub Get-ADGroupMember called: mock it.'
+}
 Export-ModuleMember -Function *
