@@ -14,6 +14,7 @@
         'ConvertTo-WsusUpstream'
         'Get-WsusNodeStatus'
         'Set-WsusReplicaConfig'
+        'New-WsusAdminGroup'
     )
     CmdletsToExport       = @()
     VariablesToExport     = @()
