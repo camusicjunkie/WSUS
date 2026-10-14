@@ -8,7 +8,7 @@ $script:TestsRoot = Split-Path -Parent $PSScriptRoot
 $script:RepoRoot = Split-Path -Parent $script:TestsRoot
 $script:StubsRoot = Join-Path $script:TestsRoot 'stubs'
 $script:ModuleManifest = Join-Path $script:RepoRoot 'src\WSUS\WSUS.psd1'
-$script:StubNames = 'UpdateServices', 'ActiveDirectory', 'WebAdministration', 'ServerManager'
+$script:StubNames = 'UpdateServices', 'ActiveDirectory', 'WebAdministration', 'ServerManager', 'ScheduledTasks'
 
 if (-not $env:WSUS_TEST_ORIGINAL_PSMODULEPATH) {
     $env:WSUS_TEST_ORIGINAL_PSMODULEPATH = $env:PSModulePath
@@ -21,6 +21,7 @@ foreach ($stub in $script:StubNames) {
 Import-Module -Name $script:ModuleManifest -Force -Global
 
 . (Join-Path $PSScriptRoot 'New-FakeWsusServer.ps1')
+. (Join-Path $PSScriptRoot 'New-FakeWsusUpdate.ps1')
 
 function Remove-WsusTestEnvironment {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
