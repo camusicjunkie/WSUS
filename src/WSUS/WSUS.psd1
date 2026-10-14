@@ -17,6 +17,8 @@
         'Disable-WsusApprovalRule'
         'Enable-WsusApprovalRule'
         'Get-WsusNodeStatus'
+        'Install-WsusNode'
+        'Set-WsusNodeConfig'
         'New-WsusAdminGroup'
         'Register-WsusMaintenanceTask'
         'Set-WsusReplicaConfig'
