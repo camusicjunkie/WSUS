@@ -11,6 +11,7 @@
 
     # Hand-listed: must match the files in Public/ (checked by tests/Module.Tests.ps1).
     FunctionsToExport     = @(
+        'Approve-WsusRing'
         'Get-WsusNodeStatus'
     )
     CmdletsToExport       = @()

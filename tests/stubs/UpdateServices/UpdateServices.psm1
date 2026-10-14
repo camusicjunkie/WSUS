@@ -67,4 +67,20 @@ namespace Microsoft.UpdateServices.Administration {
 '@
 }
 
+# UpdateScope and its enums (used by Approve-WsusRing). Same caveat: guessed shapes.
+if (-not ('Microsoft.UpdateServices.Administration.UpdateScope' -as [type])) {
+    Add-Type -TypeDefinition @'
+namespace Microsoft.UpdateServices.Administration {
+    public enum ApprovedStates { NotApproved = 1, Declined = 2, HasStaleUpdateApprovals = 4, LatestRevisionApproved = 8, Any = 15 }
+    public enum UpdateApprovalActions { Install = 1, Uninstall = 2, All = 3 }
+    public class UpdateScope {
+        public ApprovedStates ApprovedStates;
+        public UpdateApprovalActions UpdateApprovalActions;
+        public System.Collections.ArrayList ApprovedComputerTargetGroups = new System.Collections.ArrayList();
+        public System.Collections.ArrayList Classifications = new System.Collections.ArrayList();
+    }
+}
+'@
+}
+
 Export-ModuleMember -Function *

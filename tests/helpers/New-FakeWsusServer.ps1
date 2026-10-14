@@ -14,7 +14,9 @@ function New-FakeWsusServer {
         [bool] $IsReplica = $false,
         [string] $ContentPath = 'D:\WSUS',
         [Nullable[datetime]] $LastSyncStart = [datetime] '2026-10-12T02:00:00',
-        [string] $LastSyncResult = 'Succeeded'
+        [string] $LastSyncResult = 'Succeeded',
+        [string[]] $Groups = @('Pilot', 'Workstations', 'Servers'),
+        [string[]] $Classifications = @('Critical Updates', 'Security Updates', 'Definition Updates')
     )
 
     $calls = [System.Collections.Generic.List[string]]::new()
@@ -41,12 +43,24 @@ function New-FakeWsusServer {
         Calls        = $calls
         Config       = $config
         Subscription = $subscription
+        Groups       = @($Groups | ForEach-Object { [PSCustomObject] @{ Name = $_ } })
+        Classifications = @($Classifications | ForEach-Object { [PSCustomObject] @{ Title = $_ } })
+        Updates      = [System.Collections.Generic.List[object]]::new()
+        LastScope    = $null
     }
     $fake | Add-Member -MemberType ScriptMethod -Name GetConfiguration -Value {
         $this.Calls.Add('GetConfiguration'); $this.Config
     }
     $fake | Add-Member -MemberType ScriptMethod -Name GetSubscription -Value {
         $this.Calls.Add('GetSubscription'); $this.Subscription
+    }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetComputerTargetGroups -Value { $this.Groups }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateClassifications -Value { $this.Classifications }
+    # Returns every update in $fake.Updates; the real server filters by scope, the fake only records it.
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Value {
+        param ($scope)
+        $this.LastScope = $scope
+        $this.Updates.ToArray()
     }
     $fake
 }

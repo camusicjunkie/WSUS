@@ -21,6 +21,7 @@ foreach ($stub in $script:StubNames) {
 Import-Module -Name $script:ModuleManifest -Force -Global
 
 . (Join-Path $PSScriptRoot 'New-FakeWsusServer.ps1')
+. (Join-Path $PSScriptRoot 'New-FakeWsusUpdate.ps1')
 
 function Remove-WsusTestEnvironment {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
