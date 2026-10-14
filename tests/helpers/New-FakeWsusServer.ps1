@@ -14,7 +14,11 @@ function New-FakeWsusServer {
         [bool] $IsReplica = $false,
         [string] $ContentPath = 'D:\WSUS',
         [Nullable[datetime]] $LastSyncStart = [datetime] '2026-10-12T02:00:00',
-        [string] $LastSyncResult = 'Succeeded'
+        [string] $LastSyncResult = 'Succeeded',
+        # Approval rules as @{ Name = ...; Enabled = ... } hashtables (IInstallApprovalRule fakes).
+        [hashtable[]] $Rules = @(),
+        # Updates as @{ Title = ...; Kb = @('5001234'); IsDeclined = $false } hashtables (IUpdate fakes).
+        [hashtable[]] $Updates = @()
     )
 
     $calls = [System.Collections.Generic.List[string]]::new()
@@ -36,11 +40,44 @@ function New-FakeWsusServer {
         $this.Calls.Add('StartSynchronization')
     }
 
+    $ruleObjects = foreach ($rule in $Rules) {
+        $r = [PSCustomObject] @{ Name = $rule.Name; Enabled = [bool] $rule.Enabled; Calls = $calls }
+        $r | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add("Rule.Save:$($this.Name)") }
+        $r
+    }
+
+    $updateObjects = foreach ($update in $Updates) {
+        $u = [PSCustomObject] @{
+            Title                 = $update.Title
+            KnowledgebaseArticles = [string[]] $update.Kb
+            IsDeclined            = [bool] $update.IsDeclined
+            Calls                 = $calls
+        }
+        $u | Add-Member -MemberType ScriptMethod -Name Decline -Value {
+            $this.Calls.Add("Update.Decline:$($this.Title)"); $this.IsDeclined = $true
+        }
+        $u
+    }
+
     $fake = [PSCustomObject] @{
         Name         = $Name
         Calls        = $calls
         Config       = $config
         Subscription = $subscription
+        Rules        = @($ruleObjects)
+        Updates      = @($updateObjects)
+    }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetInstallApprovalRules -Value {
+        $this.Calls.Add('GetInstallApprovalRules'); $this.Rules
+    }
+    # Like the real API: SearchUpdates is a substring match on title and KB, which is why
+    # Deny-WsusUpdate re-filters to exact KB hits.
+    $fake | Add-Member -MemberType ScriptMethod -Name SearchUpdates -Value {
+        param ($Text)
+        $this.Calls.Add("SearchUpdates:$Text")
+        $this.Updates | Where-Object {
+            $_.Title -like "*$Text*" -or @($_.KnowledgebaseArticles | Where-Object { $_ -like "*$Text*" }).Count -gt 0
+        }
     }
     $fake | Add-Member -MemberType ScriptMethod -Name GetConfiguration -Value {
         $this.Calls.Add('GetConfiguration'); $this.Config
