@@ -11,11 +11,13 @@
 
     # Hand-listed: must match the files in Public/ (checked by tests/Module.Tests.ps1).
     FunctionsToExport     = @(
-        'Disable-WsusApprovalRule'
+        'ConvertTo-WsusUpstream'
         'Deny-WsusUpdate'
+        'Disable-WsusApprovalRule'
         'Enable-WsusApprovalRule'
         'Get-WsusNodeStatus'
         'New-WsusAdminGroup'
+        'Set-WsusReplicaConfig'
         'Start-WsusSync'
     )
     CmdletsToExport       = @()

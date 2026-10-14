@@ -21,7 +21,13 @@ function New-FakeWsusServer {
         # Approval rules as @{ Name = ...; Enabled = ... } hashtables (IInstallApprovalRule fakes).
         [hashtable[]] $Rules = @(),
         # Updates as @{ Title = ...; Kb = @('5001234'); IsDeclined = $false } hashtables (IUpdate fakes).
-        [hashtable[]] $Updates = @()
+        [hashtable[]] $Updates = @(),
+        [string] $UpstreamName = '',
+        [int] $UpstreamPort = 8531,
+        [string[]] $ComputerGroups = @('All Computers', 'Unassigned Computers'),
+        # Shorthand for enabled rules by name only (appended to -Rules).
+        [string[]] $ApprovalRules = @(),
+        [int] $ApprovalCount = 0
     )
 
     $calls = [System.Collections.Generic.List[string]]::new()
@@ -29,13 +35,31 @@ function New-FakeWsusServer {
     $config = [PSCustomObject] @{
         IsReplicaServer       = $IsReplica
         LocalContentCachePath = $ContentPath
+        SyncFromMicrosoftUpdate = -not $IsReplica
+        UpstreamWsusServerName = $UpstreamName
+        UpstreamWsusServerPortNumber = $UpstreamPort
+        UpstreamWsusServerUseSsl = $true
+        GetContentFromMU = -not $IsReplica
+        DownloadExpressPackages = $false
+        DownloadUpdateBinariesAsNeeded = $true
+        HostBinariesOnMicrosoftUpdate = $false
+        TargetingMode = 'Server'
+        UseProxy = $false
+        Calls = $calls
     }
+    $config | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add('Config.Save') }
 
     $syncInfo = if ($null -ne $LastSyncStart) {
         [PSCustomObject] @{ StartTime = $LastSyncStart; EndTime = $LastSyncStart.AddMinutes(30); Result = $LastSyncResult; Error = $LastSyncError }
     }
 
-    $subscription = [PSCustomObject] @{ Calls = $calls; SyncInfo = $syncInfo; PollsPerSync = $SyncPolls; PollsLeft = $(if ($SyncRunning) { $SyncPolls } else { 0 }) }
+    $subscription = [PSCustomObject] @{
+        Calls = $calls; SyncInfo = $syncInfo; PollsPerSync = $SyncPolls; PollsLeft = $(if ($SyncRunning) { $SyncPolls } else { 0 })
+        SynchronizeAutomatically = $false
+        SynchronizeAutomaticallyTimeOfDay = [timespan]::Zero
+        NumberOfSynchronizationsPerDay = 1
+    }
+    $subscription | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add('Subscription.Save') }
     $subscription | Add-Member -MemberType ScriptMethod -Name GetLastSynchronizationInfo -Value {
         $this.Calls.Add('GetLastSynchronizationInfo'); $this.SyncInfo
     }
@@ -53,7 +77,8 @@ function New-FakeWsusServer {
         [PSCustomObject] @{ ProcessedItems = 5; TotalItems = 10 }
     }
 
-    $ruleObjects = foreach ($rule in $Rules) {
+    $allRules = @($Rules) + @($ApprovalRules | ForEach-Object { @{ Name = $_; Enabled = $true } })
+    $ruleObjects = foreach ($rule in $allRules) {
         $r = [PSCustomObject] @{ Name = $rule.Name; Enabled = [bool] $rule.Enabled; Calls = $calls }
         $r | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add("Rule.Save:$($this.Name)") }
         $r
@@ -83,6 +108,8 @@ function New-FakeWsusServer {
     $fake | Add-Member -MemberType ScriptMethod -Name GetInstallApprovalRules -Value {
         $this.Calls.Add('GetInstallApprovalRules'); $this.Rules
     }
+    $fake | Add-Member -MemberType NoteProperty -Name Groups -Value @($ComputerGroups | ForEach-Object { [PSCustomObject] @{ Name = $_ } })
+    $fake | Add-Member -MemberType NoteProperty -Name Approvals -Value @(for ($i = 0; $i -lt $ApprovalCount; $i++) { [PSCustomObject] @{ Id = $i } })
     # Like the real API: SearchUpdates is a substring match on title and KB, which is why
     # Deny-WsusUpdate re-filters to exact KB hits.
     $fake | Add-Member -MemberType ScriptMethod -Name SearchUpdates -Value {
@@ -92,6 +119,8 @@ function New-FakeWsusServer {
             $_.Title -like "*$Text*" -or @($_.KnowledgebaseArticles | Where-Object { $_ -like "*$Text*" }).Count -gt 0
         }
     }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetComputerTargetGroups -Value { $this.Groups }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateApprovals -Value { param($scope) $null = $scope; $this.Approvals }
     $fake | Add-Member -MemberType ScriptMethod -Name GetConfiguration -Value {
         $this.Calls.Add('GetConfiguration'); $this.Config
     }
