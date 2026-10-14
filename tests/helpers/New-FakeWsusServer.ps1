@@ -14,7 +14,12 @@ function New-FakeWsusServer {
         [bool] $IsReplica = $false,
         [string] $ContentPath = 'D:\WSUS',
         [Nullable[datetime]] $LastSyncStart = [datetime] '2026-10-12T02:00:00',
-        [string] $LastSyncResult = 'Succeeded'
+        [string] $LastSyncResult = 'Succeeded',
+        [string] $UpstreamName = '',
+        [int] $UpstreamPort = 8531,
+        [string[]] $ComputerGroups = @('All Computers', 'Unassigned Computers'),
+        [string[]] $ApprovalRules = @('Default Automatic Approval Rule'),
+        [int] $ApprovalCount = 0
     )
 
     $calls = [System.Collections.Generic.List[string]]::new()
@@ -22,13 +27,31 @@ function New-FakeWsusServer {
     $config = [PSCustomObject] @{
         IsReplicaServer       = $IsReplica
         LocalContentCachePath = $ContentPath
+        SyncFromMicrosoftUpdate = -not $IsReplica
+        UpstreamWsusServerName = $UpstreamName
+        UpstreamWsusServerPortNumber = $UpstreamPort
+        UpstreamWsusServerUseSsl = $true
+        GetContentFromMU = -not $IsReplica
+        DownloadExpressPackages = $false
+        DownloadUpdateBinariesAsNeeded = $true
+        HostBinariesOnMicrosoftUpdate = $false
+        TargetingMode = 'Server'
+        UseProxy = $false
+        Calls = $calls
     }
+    $config | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add('Config.Save') }
 
     $syncInfo = if ($null -ne $LastSyncStart) {
         [PSCustomObject] @{ StartTime = $LastSyncStart; EndTime = $LastSyncStart.AddMinutes(30); Result = $LastSyncResult }
     }
 
-    $subscription = [PSCustomObject] @{ Calls = $calls; SyncInfo = $syncInfo }
+    $subscription = [PSCustomObject] @{
+        Calls = $calls; SyncInfo = $syncInfo
+        SynchronizeAutomatically = $false
+        SynchronizeAutomaticallyTimeOfDay = [timespan]::Zero
+        NumberOfSynchronizationsPerDay = 1
+    }
+    $subscription | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add('Subscription.Save') }
     $subscription | Add-Member -MemberType ScriptMethod -Name GetLastSynchronizationInfo -Value {
         $this.Calls.Add('GetLastSynchronizationInfo'); $this.SyncInfo
     }
@@ -41,7 +64,13 @@ function New-FakeWsusServer {
         Calls        = $calls
         Config       = $config
         Subscription = $subscription
+        Groups       = @($ComputerGroups | ForEach-Object { [PSCustomObject] @{ Name = $_ } })
+        Rules        = @($ApprovalRules | ForEach-Object { [PSCustomObject] @{ Name = $_ } })
+        Approvals    = @(for ($i = 0; $i -lt $ApprovalCount; $i++) { [PSCustomObject] @{ Id = $i } })
     }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetComputerTargetGroups -Value { $this.Groups }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetInstallApprovalRules -Value { $this.Rules }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateApprovals -Value { param($scope) $this.Approvals }
     $fake | Add-Member -MemberType ScriptMethod -Name GetConfiguration -Value {
         $this.Calls.Add('GetConfiguration'); $this.Config
     }

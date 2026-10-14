@@ -63,6 +63,7 @@ namespace Microsoft.UpdateServices.Administration {
     public enum SynchronizationResult { Succeeded = 0, Failed = 1, Canceled = 2, NeverRun = 3 }
     public enum SynchronizationStatus { NotProcessing = 0, Running = 1 }
     public enum UpdateApprovalAction { Install = 0, All = 1, NotApproved = 2, Uninstall = 3 }
+    public class UpdateApprovalScope { }
 }
 '@
 }
