@@ -73,11 +73,11 @@ function Set-WsusUpstreamConfig {
         [ValidateRange(0, 23)]
         [int] $FirstSyncUtcHour = 2,
 
-        [string[]] $ComputerGroup = @('Packer', 'Pilot', 'Workstations', 'Servers', 'VDI-Definitions'),
+        [string[]] $ComputerGroup = @('Packer', 'Pilot', 'Workstations', 'Servers', 'VDI'),
 
         [string[]] $CritSecGroup = @('Packer', 'Pilot'),
 
-        [string[]] $DefinitionGroup = @('Packer', 'Pilot', 'Workstations', 'VDI-Definitions'),
+        [string[]] $DefinitionGroup = @('Packer', 'Pilot', 'Workstations', 'VDI'),
 
         [switch] $ApplyRulesNow
     )
