@@ -28,7 +28,10 @@ function New-FakeWsusServer {
         # Shorthand for enabled rules by name only (appended to -Rules).
         [string[]] $ApprovalRules = @(),
         [int] $ApprovalCount = 0,
-        [string[]] $Classifications = @('Critical Updates', 'Security Updates', 'Definition Updates')
+        # Update category titles the server already knows, and ones that appear after a categories-only sync.
+        [string[]] $Categories = @(),
+        [string[]] $CategoriesAfterSync = @(),
+        [string[]] $Classifications = @('Critical Updates', 'Security Updates', 'Definition Updates', 'Updates')
     )
 
     $calls = [System.Collections.Generic.List[string]]::new()
@@ -41,12 +44,22 @@ function New-FakeWsusServer {
         UpstreamWsusServerPortNumber = $UpstreamPort
         UpstreamWsusServerUseSsl = $true
         GetContentFromMU = -not $IsReplica
-        DownloadExpressPackages = $false
-        DownloadUpdateBinariesAsNeeded = $true
-        HostBinariesOnMicrosoftUpdate = $false
-        TargetingMode = 'Server'
         UseProxy = $false
+        ProxyName = $null
+        ProxyServerPort = 0
+        AllUpdateLanguagesEnabled = $true
+        EnabledUpdateLanguages = @()
+        DownloadExpressPackages = $true
+        HostBinariesOnMicrosoftUpdate = $true
+        DownloadUpdateBinariesAsNeeded = $false
+        TargetingMode = 'Server'
+        AutoApproveWsusInfrastructureUpdates = $false
+        AutoRefreshUpdateApprovals = $false
+        AutoRefreshUpdateApprovalsDeclineExpired = $false
         Calls = $calls
+    }
+    $config | Add-Member -MemberType ScriptMethod -Name SetEnabledUpdateLanguages -Value {
+        param ($Language) $this.EnabledUpdateLanguages = @($Language)
     }
     $config | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add('Config.Save') }
 
@@ -70,7 +83,20 @@ function New-FakeWsusServer {
 
     $subscription | Add-Member -MemberType ScriptMethod -Name StartSynchronizationForCategoryOnly -Value {
         $this.Calls.Add('StartSynchronizationForCategoryOnly'); $this.PollsLeft = $this.PollsPerSync
+        foreach ($title in $this.Owner.PendingCategories) { $this.Owner.CategoryList.Add([PSCustomObject] @{ Title = $title }) }
     }
+    $subscription | Add-Member -NotePropertyName SynchronizeAutomatically -NotePropertyValue $false
+    $subscription | Add-Member -NotePropertyName SynchronizeAutomaticallyTimeOfDay -NotePropertyValue ([timespan]::Zero)
+    $subscription | Add-Member -NotePropertyName NumberOfSynchronizationsPerDay -NotePropertyValue 0
+    $subscription | Add-Member -NotePropertyName UpdateCategories -NotePropertyValue @()
+    $subscription | Add-Member -NotePropertyName UpdateClassifications -NotePropertyValue @()
+    $subscription | Add-Member -MemberType ScriptMethod -Name SetUpdateCategories -Value {
+        param ($Collection) $this.UpdateCategories = @($Collection | ForEach-Object Title)
+    }
+    $subscription | Add-Member -MemberType ScriptMethod -Name SetUpdateClassifications -Value {
+        param ($Collection) $this.UpdateClassifications = @($Collection | ForEach-Object Title)
+    }
+    $subscription | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add('Subscription.Save') }
     $subscription | Add-Member -MemberType ScriptMethod -Name GetSynchronizationStatus -Value {
         if ($this.PollsLeft -gt 0) { $this.PollsLeft--; 'Running' } else { 'NotProcessing' }
     }
@@ -78,11 +104,26 @@ function New-FakeWsusServer {
         [PSCustomObject] @{ ProcessedItems = 5; TotalItems = 10 }
     }
 
+    $newRule = {
+        param ($Calls, $RuleName, $RuleEnabled)
+        $r = [PSCustomObject] @{
+            Name = $RuleName; Enabled = $RuleEnabled; Calls = $Calls
+            Classifications = @(); Groups = @()
+        }
+        $r | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add("Rule.Save:$($this.Name)") }
+        $r | Add-Member -MemberType ScriptMethod -Name ApplyRule -Value { $this.Calls.Add("Rule.Apply:$($this.Name)") }
+        $r | Add-Member -MemberType ScriptMethod -Name SetUpdateClassifications -Value {
+            param ($Collection) $this.Classifications = @($Collection | ForEach-Object Title)
+        }
+        $r | Add-Member -MemberType ScriptMethod -Name SetComputerTargetGroups -Value {
+            param ($Collection) $this.Groups = @($Collection | ForEach-Object Name)
+        }
+        $r
+    }
+
     $allRules = @($Rules) + @($ApprovalRules | ForEach-Object { @{ Name = $_; Enabled = $true } })
     $ruleObjects = foreach ($rule in $allRules) {
-        $r = [PSCustomObject] @{ Name = $rule.Name; Enabled = [bool] $rule.Enabled; Calls = $calls }
-        $r | Add-Member -MemberType ScriptMethod -Name Save -Value { $this.Calls.Add("Rule.Save:$($this.Name)") }
-        $r
+        & $newRule $calls $rule.Name ([bool] $rule.Enabled)
     }
 
     $updateObjects = foreach ($update in $Updates) {
@@ -104,15 +145,38 @@ function New-FakeWsusServer {
         Config       = $config
         Subscription = $subscription
         Rules        = @($ruleObjects)
-        Classifications = @($Classifications | ForEach-Object { [PSCustomObject] @{ Title = $_ } })
         Updates      = [System.Collections.Generic.List[object]]::new()
         LastScope    = $null
+        RuleFactory  = $newRule
+        CategoryList = [System.Collections.Generic.List[object]]::new()
+        PendingCategories = $CategoriesAfterSync
+        Groups       = [System.Collections.Generic.List[object]]::new()
+        Classifications = @($Classifications | ForEach-Object { [PSCustomObject] @{ Title = $_ } })
+    }
+    foreach ($title in $Categories) { $fake.CategoryList.Add([PSCustomObject] @{ Title = $title }) }
+    foreach ($group in $ComputerGroups) { $fake.Groups.Add([PSCustomObject] @{ Name = $group }) }
+    $subscription | Add-Member -NotePropertyName Owner -NotePropertyValue $fake
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateCategories -Value { $this.CategoryList.ToArray() }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateClassifications -Value { $this.Classifications }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetComputerTargetGroups -Value { $this.Groups.ToArray() }
+    $fake | Add-Member -MemberType ScriptMethod -Name CreateComputerTargetGroup -Value {
+        param ($GroupName)
+        $this.Calls.Add("CreateGroup:$GroupName")
+        $group = [PSCustomObject] @{ Name = $GroupName }
+        $this.Groups.Add($group)
+        $group
+    }
+    $fake | Add-Member -MemberType ScriptMethod -Name CreateInstallApprovalRule -Value {
+        param ($RuleName)
+        $this.Calls.Add("CreateRule:$RuleName")
+        $rule = & $this.RuleFactory $this.Calls $RuleName $true
+        $this.Rules = @($this.Rules) + $rule
+        $rule
     }
     foreach ($u in $updateObjects) { $fake.Updates.Add($u) }
     $fake | Add-Member -MemberType ScriptMethod -Name GetInstallApprovalRules -Value {
         $this.Calls.Add('GetInstallApprovalRules'); $this.Rules
     }
-    $fake | Add-Member -MemberType NoteProperty -Name Groups -Value @($ComputerGroups | ForEach-Object { [PSCustomObject] @{ Name = $_ } })
     $fake | Add-Member -MemberType NoteProperty -Name Approvals -Value @(for ($i = 0; $i -lt $ApprovalCount; $i++) { [PSCustomObject] @{ Id = $i } })
     # Like the real API: SearchUpdates is a substring match on title and KB, which is why
     # Deny-WsusUpdate re-filters to exact KB hits.
@@ -123,8 +187,6 @@ function New-FakeWsusServer {
             $_.Title -like "*$Text*" -or @($_.KnowledgebaseArticles | Where-Object { $_ -like "*$Text*" }).Count -gt 0
         }
     }
-    $fake | Add-Member -MemberType ScriptMethod -Name GetComputerTargetGroups -Value { $this.Groups }
-    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateClassifications -Value { $this.Classifications }
     # Returns every update in $fake.Updates; the real server filters by scope, the fake only records it.
     $fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Value {
         param ($scope)

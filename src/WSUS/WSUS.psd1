@@ -22,6 +22,7 @@
         'Register-WsusMaintenanceTask'
         'Set-WsusNodeConfig'
         'Set-WsusReplicaConfig'
+        'Set-WsusUpstreamConfig'
         'Start-WsusSync'
         'Unregister-WsusMaintenanceTask'
     )

@@ -9,6 +9,7 @@ All notable changes to the WSUS module are recorded here. The format follows
 ### Added
 
 - `Install-WsusNode` and `Set-WsusNodeConfig` (local-only node install and configuration), replacing scripts 1 and 2.
+- `Set-WsusUpstreamConfig`: configures the upstream (sync source, products, classifications, schedule, groups, approval rules created off; `-ApplyRulesNow` applies only rules that are on). `-EnableRules` is replaced by `Enable-WsusApprovalRule`; a missing product title now throws.
 - `New-WsusAdminGroup`: creates the res.srv.wsus.admin resource group and nests the identity group into it (idempotent, `-WhatIf` aware).
 - `WSUS` PowerShell module for Windows PowerShell 5.1, with `Get-WsusNodeStatus`, which reports a node's role, last sync, content disk and newest maintenance and decline logs (disk and logs on the local node only).
 - `Start-WsusSync`, which starts a full or `-CategoryOnly` (upstream-only) sync, joins one already running, and with `-Wait` polls with progress and a timeout.
@@ -21,5 +22,6 @@ All notable changes to the WSUS module are recorded here. The format follows
 ### Removed
 
 - `1-Install-WsusNode.ps1` and `2-Set-WsusNodeConfig.ps1`, replaced by `Install-WsusNode` and `Set-WsusNodeConfig`.
+- `3-Configure-WsusUpstream.ps1`, replaced by `Set-WsusUpstreamConfig`.
 - `0-New-WsusAdminGroup.ps1`, replaced by `New-WsusAdminGroup`.
 - `7-New-WsusClientGpo.ps1`. Client GPOs are created by hand; there is no replacement function.
