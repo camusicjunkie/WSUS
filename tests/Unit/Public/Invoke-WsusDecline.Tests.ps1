@@ -15,8 +15,10 @@ Describe 'Invoke-WsusDecline' {
         )
         Mock -ModuleName WSUS Get-WsusLocalFqdn { 'wsus01.contoso.local' }
         Mock -ModuleName WSUS Get-WsusServer { $script:fake }
-        Mock -ModuleName WSUS Start-WsusLog { 'C:\logs\decline_20261015_0200.log' }
-        Mock -ModuleName WSUS Stop-WsusLog { }
+        # Real Start-/Stop-WsusLog run (retention is asserted on files); only the transcript and folder creation are faked.
+        Mock -ModuleName WSUS Start-Transcript { }
+        Mock -ModuleName WSUS Stop-Transcript { }
+        Mock -ModuleName WSUS New-Item { }
     }
 
     It 'declines recent arrivals that match the pattern and returns a WSUS.DeclineRun' {
@@ -27,7 +29,7 @@ Describe 'Invoke-WsusDecline' {
         $result.Role | Should -Be 'Upstream'
         $result.Declined | Should -Be 1
         $result.DeclinedUpdates | Should -Be @('Cumulative Update for Windows 11 ARM64 (KB1)')
-        $result.Log | Should -Be 'C:\logs\decline_20261015_0200.log'
+        $result.Log | Should -Match ('^' + [regex]::Escape('C:\ProgramData\WsusMaintenance\') + 'decline_\d{8}_\d{4}\.log$')
         $script:fake.Calls | Should -Contain 'Update.Decline:Cumulative Update for Windows 11 ARM64 (KB1)'
         $script:fake.Calls | Should -Not -Contain 'Update.Decline:Cumulative Update for Windows 11 x64 (KB2)'
     }
@@ -59,7 +61,7 @@ Describe 'Invoke-WsusDecline' {
         $result.Role | Should -Be 'Replica'
         $result.Declined | Should -Be 0
         $result.Log | Should -BeNullOrEmpty
-        Should -Invoke -ModuleName WSUS Start-WsusLog -Times 0 -Exactly
+        Should -Invoke -ModuleName WSUS Start-Transcript -Times 0 -Exactly
         $script:fake.Calls | Should -Not -Contain 'GetUpdates'
     }
 
@@ -70,24 +72,33 @@ Describe 'Invoke-WsusDecline' {
         $script:fake.Calls | Should -Not -Contain 'Update.Decline:Cumulative Update for Windows 11 ARM64 (KB1)'
     }
 
-    It 'logs with the decline prefix and keeps 96 logs by default' {
-        $null = Invoke-WsusDecline -LogPath 'C:\logs'
+    It 'logs to -LogPath with the decline prefix and keeps the newest 96 decline logs by default' {
+        1..100 | ForEach-Object {
+            (New-Item -ItemType File -Path (Join-Path $TestDrive ('decline_20260101_{0:000}.log' -f $_)) -Force).LastWriteTime = [datetime] '2026-01-01' + [timespan]::FromHours($_)
+        }
+        1..3 | ForEach-Object { New-Item -ItemType File -Path (Join-Path $TestDrive ('maint_20260101_{0:00}00.log' -f $_)) -Force | Out-Null }
 
-        Should -Invoke -ModuleName WSUS Start-WsusLog -Times 1 -Exactly -ParameterFilter { $Prefix -eq 'decline' -and $Path -eq 'C:\logs' }
-        Should -Invoke -ModuleName WSUS Stop-WsusLog -Times 1 -Exactly -ParameterFilter { $Prefix -eq 'decline' -and $Keep -eq 96 }
+        $result = Invoke-WsusDecline -LogPath $TestDrive
+
+        $result.Log | Should -BeLike (Join-Path $TestDrive 'decline_*.log')
+        @(Get-ChildItem -Path $TestDrive -Filter 'decline_*.log').Count | Should -Be 96
+        @(Get-ChildItem -Path $TestDrive -Filter 'maint_*.log').Count | Should -Be 3
     }
 
-    It 'throws at the first failure and still closes the log' {
+    It 'throws at the first failure and still applies log retention' {
+        1..100 | ForEach-Object {
+            (New-Item -ItemType File -Path (Join-Path $TestDrive ('decline_20260101_{0:000}.log' -f $_)) -Force).LastWriteTime = [datetime] '2026-01-01' + [timespan]::FromHours($_)
+        }
         $script:fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Force -Value { throw 'API went away' }
 
-        { Invoke-WsusDecline } | Should -Throw '*API went away*'
-        Should -Invoke -ModuleName WSUS Stop-WsusLog -Times 1 -Exactly
+        { Invoke-WsusDecline -LogPath $TestDrive } | Should -Throw '*API went away*'
+        @(Get-ChildItem -Path $TestDrive -Filter 'decline_*.log').Count | Should -Be 96
     }
 
     It 'throws naming the node when the connection fails' {
         Mock -ModuleName WSUS Get-WsusServer { throw 'refused' }
 
         { Invoke-WsusDecline } | Should -Throw "*wsus01.contoso.local*8531*"
-        Should -Invoke -ModuleName WSUS Start-WsusLog -Times 0 -Exactly
+        Should -Invoke -ModuleName WSUS Start-Transcript -Times 0 -Exactly
     }
 }

@@ -18,8 +18,10 @@ Describe 'Invoke-WsusMaintenance' {
         Mock -ModuleName WSUS Get-WsusLocalFqdn { 'wsus01.contoso.local' }
         Mock -ModuleName WSUS Test-WsusElevated { $true }
         Mock -ModuleName WSUS Get-WsusServer { $script:fake }
-        Mock -ModuleName WSUS Start-WsusLog { 'C:\logs\maint_20261015_0200.log' }
-        Mock -ModuleName WSUS Stop-WsusLog { }
+        # Real Start-/Stop-WsusLog run (retention is asserted on files); only the transcript and folder creation are faked.
+        Mock -ModuleName WSUS Start-Transcript { }
+        Mock -ModuleName WSUS Stop-Transcript { }
+        Mock -ModuleName WSUS New-Item { }
         Mock -ModuleName WSUS Invoke-WsusServerCleanup { [PSCustomObject]@{ DiskSpaceFreed = 123 } }
         Mock -ModuleName WSUS Invoke-WsusDatabaseQuery { }
     }
@@ -34,7 +36,7 @@ Describe 'Invoke-WsusMaintenance' {
         $result.DeclinedUpdates | Should -Be @('Preview of Windows 11 (KB1)', 'Old superseded update (KB2)')
         $result.Cleanup.DiskSpaceFreed | Should -Be 123
         $result.Database | Should -Be 'Completed'
-        $result.Log | Should -Be 'C:\logs\maint_20261015_0200.log'
+        $result.Log | Should -Match ('^' + [regex]::Escape('C:\ProgramData\WsusMaintenance\') + 'maint_\d{8}_\d{4}\.log$')
         $script:fake.Calls | Should -Not -Contain 'Update.Decline:Recent superseded update (KB3)'
         Should -Invoke -ModuleName WSUS Invoke-WsusServerCleanup -Times 1 -Exactly -ParameterFilter {
             $DeclineExpiredUpdates -and $DeclineSupersededUpdates -and $CleanupObsoleteUpdates -and $CompressUpdates
@@ -46,7 +48,7 @@ Describe 'Invoke-WsusMaintenance' {
 
     It 'refuses a -WsusServer that is not this node, before logging or connecting' {
         { Invoke-WsusMaintenance -WsusServer 'wsus09.contoso.local' } | Should -Throw "*local*wsus09.contoso.local*"
-        Should -Invoke -ModuleName WSUS Start-WsusLog -Times 0 -Exactly
+        Should -Invoke -ModuleName WSUS Start-Transcript -Times 0 -Exactly
         Should -Invoke -ModuleName WSUS Get-WsusServer -Times 0 -Exactly
     }
 
@@ -96,19 +98,28 @@ Describe 'Invoke-WsusMaintenance' {
         Should -Invoke -ModuleName WSUS Invoke-WsusDatabaseQuery -Times 0 -Exactly
     }
 
-    It 'logs with the maint prefix and keeps 12 logs by default' {
-        $null = Invoke-WsusMaintenance -LogPath 'C:\logs'
+    It 'logs to -LogPath with the maint prefix and keeps the newest 12 maint logs by default' {
+        1..15 | ForEach-Object {
+            (New-Item -ItemType File -Path (Join-Path $TestDrive ('maint_20260101_{0:00}00.log' -f $_)) -Force).LastWriteTime = [datetime] '2026-01-01' + [timespan]::FromHours($_)
+        }
+        1..3 | ForEach-Object { New-Item -ItemType File -Path (Join-Path $TestDrive ('decline_20260101_{0:00}00.log' -f $_)) -Force | Out-Null }
 
-        Should -Invoke -ModuleName WSUS Start-WsusLog -Times 1 -Exactly -ParameterFilter { $Prefix -eq 'maint' -and $Path -eq 'C:\logs' }
-        Should -Invoke -ModuleName WSUS Stop-WsusLog -Times 1 -Exactly -ParameterFilter { $Prefix -eq 'maint' -and $Keep -eq 12 }
+        $result = Invoke-WsusMaintenance -LogPath $TestDrive
+
+        $result.Log | Should -BeLike (Join-Path $TestDrive 'maint_*.log')
+        @(Get-ChildItem -Path $TestDrive -Filter 'maint_*.log').Count | Should -Be 12
+        @(Get-ChildItem -Path $TestDrive -Filter 'decline_*.log').Count | Should -Be 3
     }
 
-    It 'throws at the first failure, skips later steps and still closes the log' {
+    It 'throws at the first failure, skips later steps and still applies log retention' {
+        1..15 | ForEach-Object {
+            (New-Item -ItemType File -Path (Join-Path $TestDrive ('maint_20260101_{0:00}00.log' -f $_)) -Force).LastWriteTime = [datetime] '2026-01-01' + [timespan]::FromHours($_)
+        }
         Mock -ModuleName WSUS Invoke-WsusServerCleanup { throw 'cleanup blew up' }
 
-        { Invoke-WsusMaintenance } | Should -Throw '*cleanup blew up*'
+        { Invoke-WsusMaintenance -LogPath $TestDrive } | Should -Throw '*cleanup blew up*'
         Should -Invoke -ModuleName WSUS Invoke-WsusDatabaseQuery -Times 0 -Exactly
-        Should -Invoke -ModuleName WSUS Stop-WsusLog -Times 1 -Exactly
+        @(Get-ChildItem -Path $TestDrive -Filter 'maint_*.log').Count | Should -Be 12
     }
 
     It 'throws when not elevated' {

@@ -85,7 +85,7 @@ Describe 'Set-WsusReplicaConfig' {
         }
 
         It 'refuses an Upstream with custom approval rules unless -Force' {
-            $script:fake = New-FakeWsusServer -Name 'wsus02.contoso.local' -ApprovalRules 'Default Automatic Approval Rule', 'Auto - Servers'
+            $script:fake = New-FakeWsusServer -Name 'wsus02.contoso.local' -Rules @(@{ Name = 'Default Automatic Approval Rule'; Enabled = $true }, @{ Name = 'Auto - Servers'; Enabled = $true })
 
             { Set-WsusReplicaConfig -UpstreamFqdn 'wsus01.contoso.local' -Confirm:$false } | Should -Throw '*-Force*'
         }

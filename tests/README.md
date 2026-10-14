@@ -45,8 +45,12 @@ imports the stubs and `src/WSUS` globally, and loads `New-FakeWsusServer`.
   stub of the Administration enums; enum names and values are guessed and unverified), `ActiveDirectory`,
   `WebAdministration`, `ServerManager` (`Get-WindowsFeature`). `Deny-WsusUpdate` is left out of the
   `UpdateServices` stub because the module defines its own. No `GroupPolicy` stub: the GPO function was dropped (#14).
-- `New-FakeWsusServer` takes `-Name -IsReplica -ContentPath -LastSyncStart -LastSyncResult`; extend it (and
-  record calls from new ScriptMethods) when a function needs more of `IUpdateServer`.
+- `New-FakeWsusServer` takes `-Name -IsReplica -ContentPath -LastSyncStart -LastSyncResult -LastSyncError -SyncRunning -SyncPolls`
+  (sync state), `-Rules` (hashtables `@{ Name; Enabled }`), `-Updates` (hashtables `@{ Title; Kb; IsDeclined; IsSuperseded; ArrivalDate }`),
+  `-ComputerGroups -ApprovalCount -Classifications`, `-Categories` and `-CategoriesAfterSync` (category titles known now and
+  those a categories-only sync adds) and `-UpstreamName -UpstreamPort`. `New-FakeWsusUpdate -Server` adds richer updates (approvals,
+  install summaries) for `Approve-WsusRing`. Extend them (and record calls from new ScriptMethods) when a function needs more
+  of `IUpdateServer`.
 - Wrapper seams (database query, app pool, SSL binding, file access, WSUS utility, service restart; #9) are
   mocked by name; they arrive with the functions that need them.
 - Results are `[PSCustomObject]` with a `WSUS.*` `PSTypeName`.
