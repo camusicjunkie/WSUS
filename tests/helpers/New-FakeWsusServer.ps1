@@ -70,7 +70,7 @@ function New-FakeWsusServer {
     }
     $fake | Add-Member -MemberType ScriptMethod -Name GetComputerTargetGroups -Value { $this.Groups }
     $fake | Add-Member -MemberType ScriptMethod -Name GetInstallApprovalRules -Value { $this.Rules }
-    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateApprovals -Value { param($scope) $this.Approvals }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateApprovals -Value { param($scope) $null = $scope; $this.Approvals }
     $fake | Add-Member -MemberType ScriptMethod -Name GetConfiguration -Value {
         $this.Calls.Add('GetConfiguration'); $this.Config
     }

@@ -78,7 +78,7 @@ function Set-WsusReplicaConfig {
         }
 
         if ($WhatIfPreference) {
-            Write-Host "What if: would probe https://${UpstreamFqdn}:$UpstreamPort/selfupdate/wuident.cab"
+            Write-Information -MessageData "What if: would probe https://${UpstreamFqdn}:$UpstreamPort/selfupdate/wuident.cab" -InformationAction Continue
         }
         elseif (-not (Test-WsusUpstreamReachable -Fqdn $UpstreamFqdn -Port $UpstreamPort)) {
             throw "Upstream '${UpstreamFqdn}:$UpstreamPort' did not answer https://${UpstreamFqdn}:$UpstreamPort/selfupdate/wuident.cab. Check the name, port and certificate, or use -Force to skip the check."

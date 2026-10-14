@@ -43,7 +43,7 @@ function ConvertTo-WsusUpstream {
 
     if (-not $Force) {
         if ($WhatIfPreference) {
-            Write-Host "What if: would probe ${previous} to confirm the upstream is lost"
+            Write-Information -MessageData "What if: would probe ${previous} to confirm the upstream is lost" -InformationAction Continue
         }
         elseif (Test-WsusUpstreamReachable -Fqdn $config.UpstreamWsusServerName -Port $config.UpstreamWsusServerPortNumber) {
             throw "The upstream $previous still answers. Promote only when it is lost for good; use -Force to promote anyway (for example when it will be rebuilt as the new replica)."
