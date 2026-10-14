@@ -16,6 +16,7 @@
         'Enable-WsusApprovalRule'
         'Get-WsusNodeStatus'
         'New-WsusAdminGroup'
+        'Set-WsusUpstreamConfig'
         'Start-WsusSync'
     )
     CmdletsToExport       = @()

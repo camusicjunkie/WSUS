@@ -67,4 +67,15 @@ namespace Microsoft.UpdateServices.Administration {
 '@
 }
 
+# Stub of the Administration collection types used when assigning categories, classifications and groups.
+if (-not ('Microsoft.UpdateServices.Administration.UpdateCategoryCollection' -as [type])) {
+    Add-Type -TypeDefinition @'
+namespace Microsoft.UpdateServices.Administration {
+    public class UpdateCategoryCollection : System.Collections.ArrayList { }
+    public class UpdateClassificationCollection : System.Collections.ArrayList { }
+    public class ComputerTargetGroupCollection : System.Collections.ArrayList { }
+}
+'@
+}
+
 Export-ModuleMember -Function *
