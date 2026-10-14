@@ -15,6 +15,7 @@
         'Deny-WsusUpdate'
         'Enable-WsusApprovalRule'
         'Get-WsusNodeStatus'
+        'New-WsusAdminGroup'
     )
     CmdletsToExport       = @()
     VariablesToExport     = @()
