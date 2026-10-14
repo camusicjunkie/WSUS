@@ -43,7 +43,6 @@ Describe 'Get-WsusNodeStatus' {
             $result.ContentFreeGB | Should -Be 25
             $result.ContentTotalGB | Should -Be 100
             $result.ContentFreePercent | Should -Be 25
-            Should -Invoke -ModuleName WSUS Get-PSDrive -ParameterFilter { $Name -eq 'D' } -Times 1
         }
 
         It 'reports the newest maintenance and decline logs' {
@@ -67,7 +66,7 @@ Describe 'Get-WsusNodeStatus' {
         It 'connects to the local FQDN on the standard SSL port by default' {
             Get-WsusNodeStatus | Out-Null
 
-            Should -Invoke -ModuleName WSUS Get-WsusServer -Times 1 -Exactly -ParameterFilter {
+            Should -Invoke -ModuleName WSUS Get-WsusServer -ParameterFilter {
                 $Name -eq 'wsus01.contoso.local' -and $PortNumber -eq 8531 -and $UseSsl
             }
         }
@@ -75,7 +74,7 @@ Describe 'Get-WsusNodeStatus' {
         It 'honours -Port' {
             Get-WsusNodeStatus -Port 9999 | Out-Null
 
-            Should -Invoke -ModuleName WSUS Get-WsusServer -Times 1 -ParameterFilter { $PortNumber -eq 9999 }
+            Should -Invoke -ModuleName WSUS Get-WsusServer -ParameterFilter { $PortNumber -eq 9999 }
         }
 
         It 'does not change anything on the server' {

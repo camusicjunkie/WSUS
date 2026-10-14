@@ -66,7 +66,7 @@ function Set-WsusReplicaConfig {
     }
 
     if (-not $Force) {
-        if (-not $config.IsReplicaServer) {
+        if ((Get-WsusNodeRole -Wsus $wsus) -eq 'Upstream') {
             $builtInGroups = 'All Computers', 'Unassigned Computers'
             $customGroups = @($wsus.GetComputerTargetGroups() | Where-Object { $_.Name -notin $builtInGroups })
             $customRules = @($wsus.GetInstallApprovalRules() | Where-Object { $_.Name -ne 'Default Automatic Approval Rule' })

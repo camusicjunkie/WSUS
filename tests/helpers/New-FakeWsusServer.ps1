@@ -20,14 +20,13 @@ function New-FakeWsusServer {
         [string] $LastSyncError,
         # Approval rules as @{ Name = ...; Enabled = ... } hashtables (IInstallApprovalRule fakes).
         [hashtable[]] $Rules = @(),
-        # Updates as @{ Title = ...; Kb = @('5001234'); IsDeclined = $false } hashtables (IUpdate fakes);
+        # Plain updates for decline tests (Approve-WsusRing tests use New-FakeWsusUpdate instead, which models
+        # approvals and summaries). Hashtables: @{ Title = ...; Kb = @('5001234'); IsDeclined = $false } (IUpdate fakes);
         # optional IsSuperseded and ArrivalDate (default now UTC).
         [hashtable[]] $Updates = @(),
         [string] $UpstreamName = '',
         [int] $UpstreamPort = 8531,
         [string[]] $ComputerGroups = @('All Computers', 'Unassigned Computers'),
-        # Shorthand for enabled rules by name only (appended to -Rules).
-        [string[]] $ApprovalRules = @(),
         [int] $ApprovalCount = 0,
         # Update category titles the server already knows, and ones that appear after a categories-only sync.
         [string[]] $Categories = @(),
@@ -84,7 +83,7 @@ function New-FakeWsusServer {
 
     $subscription | Add-Member -MemberType ScriptMethod -Name StartSynchronizationForCategoryOnly -Value {
         $this.Calls.Add('StartSynchronizationForCategoryOnly'); $this.PollsLeft = $this.PollsPerSync
-        foreach ($title in $this.Owner.PendingCategories) { $this.Owner.CategoryList.Add([PSCustomObject] @{ Title = $title }) }
+        foreach ($title in $this.Owner.CategoriesAfterSync) { $this.Owner.CategoryList.Add([PSCustomObject] @{ Title = $title }) }
     }
     $subscription | Add-Member -NotePropertyName UpdateCategories -NotePropertyValue @()
     $subscription | Add-Member -NotePropertyName UpdateClassifications -NotePropertyValue @()
@@ -118,8 +117,7 @@ function New-FakeWsusServer {
         $r
     }
 
-    $allRules = @($Rules) + @($ApprovalRules | ForEach-Object { @{ Name = $_; Enabled = $true } })
-    $ruleObjects = foreach ($rule in $allRules) {
+    $ruleObjects = foreach ($rule in $Rules) {
         & $newRule $calls $rule.Name ([bool] $rule.Enabled)
     }
 
@@ -148,7 +146,7 @@ function New-FakeWsusServer {
         LastScope    = $null
         RuleFactory  = $newRule
         CategoryList = [System.Collections.Generic.List[object]]::new()
-        PendingCategories = $CategoriesAfterSync
+        CategoriesAfterSync = $CategoriesAfterSync
         Groups       = [System.Collections.Generic.List[object]]::new()
         Classifications = @($Classifications | ForEach-Object { [PSCustomObject] @{ Title = $_ } })
     }

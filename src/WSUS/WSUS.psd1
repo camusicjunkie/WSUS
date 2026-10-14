@@ -36,7 +36,6 @@
         PSData = @{
             Tags         = @('WSUS', 'WindowsUpdate', 'UpdateServices')
             ProjectUri   = 'https://github.com/camusicjunkie/WSUS'
-            LicenseUri   = 'https://github.com/camusicjunkie/WSUS/blob/main/LICENSE'
             ReleaseNotes = 'See CHANGELOG.md in the project repository.'
         }
     }

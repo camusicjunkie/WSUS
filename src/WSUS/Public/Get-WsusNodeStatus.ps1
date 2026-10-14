@@ -80,30 +80,22 @@ function Get-WsusNodeStatus {
             if ($server -in $localNames) {
                 $status.ContentPath = $config.LocalContentCachePath
 
-                $driveName = if ($status.ContentPath) { [string] $status.ContentPath.Substring(0, 1) }
-                $drive = if ($driveName -match '^[A-Za-z]$' -and $status.ContentPath -match '^[A-Za-z]:') {
-                    Get-PSDrive -Name $driveName -PSProvider FileSystem -ErrorAction SilentlyContinue
-                }
-                if ($drive) {
-                    $total = [double] $drive.Used + [double] $drive.Free
-                    $status.ContentFreeGB = [math]::Round($drive.Free / 1GB, 2)
-                    $status.ContentTotalGB = [math]::Round($total / 1GB, 2)
-                    if ($total -gt 0) { $status.ContentFreePercent = [math]::Round($drive.Free / $total * 100, 1) }
+                $disk = Get-WsusContentDisk -ContentPath $status.ContentPath
+                if ($disk) {
+                    $status.ContentFreeGB = $disk.FreeGB
+                    $status.ContentTotalGB = $disk.TotalGB
+                    $status.ContentFreePercent = $disk.FreePercent
                 }
 
-                $newest = @{}
-                foreach ($kind in 'maint', 'decline') {
-                    $newest[$kind] = Get-ChildItem -LiteralPath $logRoot -Filter "${kind}_*.log" -File -ErrorAction SilentlyContinue |
-                        Sort-Object -Property LastWriteTime -Descending |
-                        Select-Object -First 1
+                $maintLog = Get-WsusNewestLog -Prefix maint -Path $logRoot
+                if ($maintLog) {
+                    $status.MaintenanceLogPath = $maintLog.FullName
+                    $status.MaintenanceLogLastWriteTime = $maintLog.LastWriteTime
                 }
-                if ($newest.maint) {
-                    $status.MaintenanceLogPath = $newest.maint.FullName
-                    $status.MaintenanceLogLastWriteTime = $newest.maint.LastWriteTime
-                }
-                if ($newest.decline) {
-                    $status.DeclineLogPath = $newest.decline.FullName
-                    $status.DeclineLogLastWriteTime = $newest.decline.LastWriteTime
+                $declineLog = Get-WsusNewestLog -Prefix decline -Path $logRoot
+                if ($declineLog) {
+                    $status.DeclineLogPath = $declineLog.FullName
+                    $status.DeclineLogLastWriteTime = $declineLog.LastWriteTime
                 }
             }
 

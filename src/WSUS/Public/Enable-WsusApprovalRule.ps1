@@ -36,7 +36,7 @@ function Enable-WsusApprovalRule {
     }
 
     process {
-        $matching = $rules | Where-Object { $ruleName = $_.Name; $Name | Where-Object { $ruleName -like $_ } }
+        $matching = Get-WsusApprovalRuleMatch -Rule $rules -Name $Name
         foreach ($rule in $matching) {
             $changed = $false
             if (-not $rule.Enabled -and $PSCmdlet.ShouldProcess("$($rule.Name) on $WsusServer", 'Enable approval rule')) {
