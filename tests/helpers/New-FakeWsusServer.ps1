@@ -20,7 +20,8 @@ function New-FakeWsusServer {
         [string] $LastSyncError,
         # Approval rules as @{ Name = ...; Enabled = ... } hashtables (IInstallApprovalRule fakes).
         [hashtable[]] $Rules = @(),
-        # Updates as @{ Title = ...; Kb = @('5001234'); IsDeclined = $false } hashtables (IUpdate fakes).
+        # Updates as @{ Title = ...; Kb = @('5001234'); IsDeclined = $false } hashtables (IUpdate fakes);
+        # optional IsSuperseded and ArrivalDate (default now UTC).
         [hashtable[]] $Updates = @(),
         [string] $UpstreamName = '',
         [int] $UpstreamPort = 8531,
@@ -127,6 +128,8 @@ function New-FakeWsusServer {
             Title                 = $update.Title
             KnowledgebaseArticles = [string[]] $update.Kb
             IsDeclined            = [bool] $update.IsDeclined
+            IsSuperseded          = [bool] $update.IsSuperseded
+            ArrivalDate           = $(if ($update.ArrivalDate) { [datetime] $update.ArrivalDate } else { [datetime]::UtcNow })
             Calls                 = $calls
         }
         $u | Add-Member -MemberType ScriptMethod -Name Decline -Value {
@@ -183,11 +186,14 @@ function New-FakeWsusServer {
             $_.Title -like "*$Text*" -or @($_.KnowledgebaseArticles | Where-Object { $_ -like "*$Text*" }).Count -gt 0
         }
     }
-    # Returns every update in $fake.Updates; the real server filters by scope, the fake only records it.
+    # Records the scope. Filters only by FromArrivalDate (updates without an ArrivalDate always match);
+    # the real server filters by the whole scope.
     $fake | Add-Member -MemberType ScriptMethod -Name GetUpdates -Value {
         param ($scope)
         $this.LastScope = $scope
-        $this.Updates.ToArray()
+        $this.Updates.ToArray() | Where-Object {
+            -not $_.PSObject.Properties['ArrivalDate'] -or -not $scope -or $_.ArrivalDate -ge $scope.FromArrivalDate
+        }
     }
     $fake | Add-Member -MemberType ScriptMethod -Name GetUpdateApprovals -Value { param($scope) $null = $scope; $this.Approvals }
     $fake | Add-Member -MemberType ScriptMethod -Name GetConfiguration -Value {

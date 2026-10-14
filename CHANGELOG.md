@@ -14,6 +14,7 @@ All notable changes to the WSUS module are recorded here. The format follows
 - `WSUS` PowerShell module for Windows PowerShell 5.1, with `Get-WsusNodeStatus`, which reports a node's role, last sync, content disk and newest maintenance and decline logs (disk and logs on the local node only).
 - `Start-WsusSync`, which starts a full or `-CategoryOnly` (upstream-only) sync, joins one already running, and with `-Wait` polls with progress and a timeout.
 - `Disable-WsusApprovalRule`, `Enable-WsusApprovalRule` and `Deny-WsusUpdate -Kb` for turning approval rules off and on and declining updates by exact KB (upstream only).
+- `Invoke-WsusMaintenance` (weekly maintenance run on the local node: declines on an upstream, cleanup, WID reindex) and `Invoke-WsusDecline` (15-minute decline run on the upstream, remote-capable), both with transcripts and retention, replacing `-DeclineOnly`.
 - `Set-WsusReplicaConfig` and `ConvertTo-WsusUpstream` replace `4-Configure-WsusReplica.ps1`: replica setup with an upstream probe and guards, and a guarded promote for a lost upstream.
 - `build.ps1` with `Analyze`, `Test`, `All` and `Release` tasks, and a GitHub Actions workflow that runs it under `pwsh` and Windows PowerShell 5.1.
 - `Approve-WsusRing` promotes updates from one ring to the next only when they pass the gate, returning one `WSUS.RingApproval` row per update; replaces `8-Approve-WsusRing.ps1`.
@@ -24,4 +25,5 @@ All notable changes to the WSUS module are recorded here. The format follows
 - `1-Install-WsusNode.ps1` and `2-Set-WsusNodeConfig.ps1`, replaced by `Install-WsusNode` and `Set-WsusNodeConfig`.
 - `3-Configure-WsusUpstream.ps1`, replaced by `Set-WsusUpstreamConfig`.
 - `0-New-WsusAdminGroup.ps1`, replaced by `New-WsusAdminGroup`.
+- `5-Invoke-WsusMaintenance.ps1`, replaced by `Invoke-WsusMaintenance` and `Invoke-WsusDecline`. Register the tasks with `Register-WsusMaintenanceTask` (the script's task snippet is gone).
 - `7-New-WsusClientGpo.ps1`. Client GPOs are created by hand; there is no replacement function.

@@ -18,6 +18,8 @@
         'Enable-WsusApprovalRule'
         'Get-WsusNodeStatus'
         'Install-WsusNode'
+        'Invoke-WsusDecline'
+        'Invoke-WsusMaintenance'
         'New-WsusAdminGroup'
         'Register-WsusMaintenanceTask'
         'Set-WsusNodeConfig'

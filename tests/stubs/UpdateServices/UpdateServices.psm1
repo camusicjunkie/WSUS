@@ -77,6 +77,7 @@ namespace Microsoft.UpdateServices.Administration {
     public class UpdateScope {
         public ApprovedStates ApprovedStates;
         public UpdateApprovalActions UpdateApprovalActions;
+        public System.DateTime FromArrivalDate = System.DateTime.MinValue;
         public System.Collections.ArrayList ApprovedComputerTargetGroups = new System.Collections.ArrayList();
         public System.Collections.ArrayList Classifications = new System.Collections.ArrayList();
     }
