@@ -8,10 +8,13 @@ function Assert-WsusPrerequisite {
     #>
     [CmdletBinding()]
     param (
+        # Modules that must be available, e.g. UpdateServices.
         [string[]] $Module,
 
+        # Require an elevated PowerShell session.
         [switch] $Administrator,
 
+        # Windows features that must be installed.
         [string[]] $Feature
     )
 

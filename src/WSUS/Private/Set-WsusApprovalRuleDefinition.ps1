@@ -5,28 +5,24 @@ function Set-WsusApprovalRuleDefinition {
     .DESCRIPTION
         A new rule is created off. An existing rule keeps its on/off state: turning rules on is
         Enable-WsusApprovalRule. Does not call ShouldProcess; the public caller does.
-    .PARAMETER Wsus
-        The IUpdateServer returned by Connect-WsusNode.
-    .PARAMETER Name
-        Rule name.
-    .PARAMETER ClassificationTitle
-        Titles of the update classifications the rule approves.
-    .PARAMETER GroupName
-        Names of the computer groups the rule approves for.
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
         Justification = 'Private helper; the public caller wraps it in ShouldProcess.')]
     [CmdletBinding()]
     param (
+        # The IUpdateServer returned by Connect-WsusNode.
         [Parameter(Mandatory)]
         $Wsus,
 
+        # Rule name.
         [Parameter(Mandatory)]
         [string] $Name,
 
+        # Titles of the update classifications the rule approves.
         [Parameter(Mandatory)]
         [string[]] $ClassificationTitle,
 
+        # Names of the computer groups the rule approves for.
         [Parameter(Mandatory)]
         [string[]] $GroupName
     )

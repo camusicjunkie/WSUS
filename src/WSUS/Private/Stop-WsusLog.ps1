@@ -11,11 +11,14 @@ function Stop-WsusLog {
         Justification = 'Closes the run transcript and applies retention; it must happen under -WhatIf too.')]
     [CmdletBinding()]
     param (
+        # Log name prefix whose retention is applied.
         [Parameter(Mandatory)]
         [string] $Prefix,
 
+        # Folder holding the logs. Default C:\ProgramData\WsusMaintenance.
         [string] $Path = 'C:\ProgramData\WsusMaintenance',
 
+        # Number of newest logs to keep. Default 12.
         [int] $Keep = 12
     )
 

@@ -10,11 +10,6 @@ function Get-WsusNodeStatus {
         No verdict is returned (no 'Healthy' flag); filter the objects with Where-Object.
         A node that can't be reached writes a non-terminating error naming the node and port, and
         the remaining nodes are still processed.
-    .PARAMETER WsusServer
-        One or more node names. Accepts pipeline input and a property named WsusServer or Server.
-        Defaults to this machine's FQDN.
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
     .EXAMPLE
         Get-WsusNodeStatus
         Status of the local node.
@@ -27,10 +22,12 @@ function Get-WsusNodeStatus {
     [CmdletBinding()]
     [OutputType('WSUS.NodeStatus')]
     param (
+        # Node names. Accepts pipeline input and a WsusServer or Server property. Defaults to this machine's FQDN.
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('Server')]
         [string[]] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531
     )
 

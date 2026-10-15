@@ -6,12 +6,10 @@ function Assert-WsusAllUsersInstall {
         Scheduled tasks run as SYSTEM through powershell.exe and only see the all-users module paths
         of Windows PowerShell 5.1 (Program Files and the system module folder), so registering a task
         from a per-user install or an ad-hoc import would leave a task that can't run.
-    .PARAMETER ModuleBase
-        Folder the module was loaded from. Defaults to this module's own base; a parameter so the
-        decision can be tested.
     #>
     [CmdletBinding()]
     param (
+        # Folder the module was loaded from. Defaults to the module's own base; a parameter for testing.
         [string] $ModuleBase = $ExecutionContext.SessionState.Module.ModuleBase
     )
 

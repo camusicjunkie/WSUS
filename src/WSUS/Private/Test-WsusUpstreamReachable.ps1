@@ -1,22 +1,25 @@
 function Test-WsusUpstreamReachable {
     <#
     .SYNOPSIS
-        Returns $true when an upstream WSUS node answers on its SSL port.
+        Returns $true when an upstream WSUS node answers on its port.
     .DESCRIPTION
-        Test seam over the request for https://<Fqdn>:<Port>/selfupdate/wuident.cab. Makes no
+        Test seam over the request for the node's client web service (see Get-WsusClientServiceUri;
+        https on 8531, http otherwise). Makes no
         decisions; callers decide what an unreachable upstream means.
     #>
     [CmdletBinding()]
     [OutputType([bool])]
     param (
+        # FQDN of the upstream WSUS node.
         [Parameter(Mandatory)]
         [string] $Fqdn,
 
+        # Upstream WSUS port. 8531 probes over https, any other port over http. Default 8531.
         [int] $Port = 8531
     )
 
     try {
-        $null = Invoke-WebRequest -Uri "https://${Fqdn}:$Port/selfupdate/wuident.cab" -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
+        $null = Invoke-WebRequest -Uri (Get-WsusClientServiceUri -Fqdn $Fqdn -Port $Port) -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
         $true
     }
     catch {

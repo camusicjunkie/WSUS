@@ -5,12 +5,6 @@ function Enable-WsusApprovalRule {
     .DESCRIPTION
         Upstream only. A rule that is already on is skipped (no save). One WSUS.ApprovalRule object
         is returned per matching rule, with Changed telling whether it was switched.
-    .PARAMETER Name
-        Rule names; wildcards allowed. Mandatory. Accepts pipeline input and a property named Name.
-    .PARAMETER WsusServer
-        The upstream node. Defaults to this machine's FQDN.
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
     .EXAMPLE
         Enable-WsusApprovalRule -Name 'Critical*'
         Turns the named rule on (the stock Default rule is never touched unless named).
@@ -20,11 +14,14 @@ function Enable-WsusApprovalRule {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('WSUS.ApprovalRule')]
     param (
+        # Rule names; wildcards allowed. Mandatory. Accepts pipeline input and a property named Name.
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [string[]] $Name,
 
+        # The upstream node. Defaults to this machine's FQDN.
         [string] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531
     )
 

@@ -11,12 +11,6 @@ function Deny-WsusUpdate {
 
         The real UpdateServices module has its own Deny-WsusUpdate (it takes an update object).
         If both modules are loaded, call this one as WSUS\Deny-WsusUpdate.
-    .PARAMETER Kb
-        One or more KB numbers, with or without the KB prefix (KB5001234 or 5001234).
-    .PARAMETER WsusServer
-        The upstream node. Defaults to this machine's FQDN.
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
     .EXAMPLE
         Deny-WsusUpdate -Kb KB5001234
         Declines every update for KB5001234 on the local upstream.
@@ -26,12 +20,15 @@ function Deny-WsusUpdate {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('WSUS.DeclineResult')]
     param (
+        # One or more KB numbers, with or without the KB prefix (KB5001234 or 5001234).
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidatePattern('^(KB)?\d+$')]
         [string[]] $Kb,
 
+        # The upstream node. Defaults to this machine's FQDN.
         [string] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531
     )
 

@@ -5,12 +5,6 @@ function Disable-WsusApprovalRule {
     .DESCRIPTION
         Upstream only. A rule that is already off is skipped (no save). One WSUS.ApprovalRule object
         is returned per matching rule, with Changed telling whether it was switched.
-    .PARAMETER Name
-        Rule names; wildcards allowed. Accepts pipeline input and a property named Name. Default '*'.
-    .PARAMETER WsusServer
-        The upstream node. Defaults to this machine's FQDN.
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
     .EXAMPLE
         Disable-WsusApprovalRule
         Turns every approval rule off on the local upstream.
@@ -20,11 +14,14 @@ function Disable-WsusApprovalRule {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('WSUS.ApprovalRule')]
     param (
+        # Rule names; wildcards allowed. Accepts pipeline input and a property named Name. Default '*'.
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [string[]] $Name = '*',
 
+        # The upstream node. Defaults to this machine's FQDN.
         [string] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531
     )
 

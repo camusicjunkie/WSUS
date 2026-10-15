@@ -7,9 +7,11 @@ function Invoke-WsusDatabaseQuery {
     #>
     [CmdletBinding()]
     param (
+        # WID named pipe to connect to.
         [Parameter(Mandatory)]
         [string] $Instance,
 
+        # T-SQL batch to run against SUSDB.
         [Parameter(Mandatory)]
         [string] $Query
     )

@@ -10,16 +10,6 @@ function Start-WsusSync {
         -Wait polls every 15 seconds and shows progress. The timeout defaults to 30 minutes for
         -CategoryOnly and 480 minutes for a full sync. A timeout throws, but the sync keeps running
         on the server. A Failed result throws.
-    .PARAMETER WsusServer
-        Node to sync. Defaults to this machine's FQDN.
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
-    .PARAMETER CategoryOnly
-        Fetch categories only, without the full update catalog. Upstream only.
-    .PARAMETER Wait
-        Wait for the sync to finish and report its outcome.
-    .PARAMETER TimeoutMinutes
-        How long -Wait polls. Default 30 with -CategoryOnly, otherwise 480.
     .EXAMPLE
         Start-WsusSync -CategoryOnly -Wait
         Fetches categories so products can be chosen, and waits.
@@ -29,14 +19,19 @@ function Start-WsusSync {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('WSUS.SyncResult')]
     param (
+        # Node to sync. Defaults to this machine's FQDN.
         [string] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531,
 
+        # Fetch categories only, without the full update catalog. Upstream only.
         [switch] $CategoryOnly,
 
+        # Wait for the sync to finish and report its outcome.
         [switch] $Wait,
 
+        # How long -Wait polls. Default 30 with -CategoryOnly, otherwise 480.
         [ValidateRange(1, 10080)]
         [int] $TimeoutMinutes = $(if ($CategoryOnly) { 30 } else { 480 })
     )

@@ -42,7 +42,7 @@ Describe 'Invoke-WsusMaintenance' {
             $DeclineExpiredUpdates -and $DeclineSupersededUpdates -and $CleanupObsoleteUpdates -and $CompressUpdates
         }
         Should -Invoke -ModuleName WSUS Invoke-WsusDatabaseQuery -Times 1 -Exactly -ParameterFilter {
-            $Instance -eq '\.\pipe\MICROSOFT##WID\tsql\query' -and $Query -like '*sp_updatestats*'
+            $Instance -eq '\\.\pipe\MICROSOFT##WID\tsql\query' -and $Query -like '*sp_updatestats*'
         }
     }
 

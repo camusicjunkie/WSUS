@@ -22,22 +22,6 @@ function Approve-WsusRing {
 
         Approve on the Tuesday of week 2: Workstations install Wednesday and Servers Thursday, as set
         by the client GPO schedule.
-    .PARAMETER From
-        Group whose approvals are promoted. Default Pilot.
-    .PARAMETER To
-        Group or groups that receive the approvals. Default Workstations and Servers.
-    .PARAMETER Classification
-        Update classifications to promote. Default Critical Updates and Security Updates.
-    .PARAMETER MinimumSoakDays
-        Days an update must have been approved for -From before it can be promoted. Default 5.
-    .PARAMETER MinimumInstalledPercent
-        Percent of the -From computers that need the update that must have it installed. Default 90.
-    .PARAMETER Force
-        Approve updates that fail the gate.
-    .PARAMETER WsusServer
-        Upstream to connect to. Defaults to this node's FQDN.
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
     .EXAMPLE
         Approve-WsusRing -WhatIf
         Shows the gate result for every candidate update without approving anything.
@@ -53,22 +37,30 @@ function Approve-WsusRing {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('WSUS.RingApproval')]
     param (
+        # Group whose approvals are promoted. Default Pilot.
         [string] $From = 'Pilot',
 
+        # Group or groups that receive the approvals. Default Workstations and Servers.
         [string[]] $To = @('Workstations', 'Servers'),
 
+        # Update classifications to promote. Default Critical Updates and Security Updates.
         [string[]] $Classification = @('Critical Updates', 'Security Updates'),
 
+        # Days an update must have been approved for -From before it can be promoted. Default 5.
         [ValidateRange(0, 60)]
         [int] $MinimumSoakDays = 5,
 
+        # Percent of the -From computers that need the update that must have it installed. Default 90.
         [ValidateRange(0, 100)]
         [int] $MinimumInstalledPercent = 90,
 
+        # Approve updates that fail the gate.
         [switch] $Force,
 
+        # Upstream to connect to. Defaults to this node's FQDN.
         [string] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531
     )
 

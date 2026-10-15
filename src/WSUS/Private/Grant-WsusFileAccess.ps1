@@ -9,6 +9,7 @@ function Grant-WsusFileAccess {
         Justification = 'Thin seam; the public caller owns ShouldProcess.')]
     [CmdletBinding()]
     param (
+        # File to take ownership of and grant Administrators full control.
         [Parameter(Mandatory)]
         [string] $Path
     )

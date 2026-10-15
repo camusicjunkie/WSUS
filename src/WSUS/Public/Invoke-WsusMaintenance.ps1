@@ -16,20 +16,6 @@ function Invoke-WsusMaintenance {
         After the first full sync, or to recover a full content disk, run it once with
         -SupersededAgeDays 0 so every superseded update is declined and its files deleted.
         Under powershell.exe -Command an uncaught error gives exit code 1 for Task Scheduler.
-    .PARAMETER SupersededAgeDays
-        Decline superseded updates that arrived more than this many days ago (0-365). Default 30.
-    .PARAMETER DeclinePattern
-        Regex matched against update titles. Defaults to the pattern shared with Invoke-WsusDecline.
-    .PARAMETER WidInstance
-        WID named pipe. Only change this for a non-default WID.
-    .PARAMETER WsusServer
-        Must be this node's FQDN (the default).
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
-    .PARAMETER LogPath
-        Folder for transcripts. Default C:\ProgramData\WsusMaintenance.
-    .PARAMETER KeepLogs
-        Number of maintenance transcripts to keep (1-520). Default 12.
     .EXAMPLE
         Invoke-WsusMaintenance -WhatIf
     .EXAMPLE
@@ -41,19 +27,26 @@ function Invoke-WsusMaintenance {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('WSUS.MaintenanceRun')]
     param (
+        # Decline superseded updates that arrived more than this many days ago (0-365). Default 30.
         [ValidateRange(0, 365)]
         [int] $SupersededAgeDays = 30,
 
+        # Regex matched against update titles. Defaults to the pattern shared with Invoke-WsusDecline.
         [string] $DeclinePattern = (Get-WsusDefaultDeclinePattern),
 
-        [string] $WidInstance = '\.\pipe\MICROSOFT##WID\tsql\query',
+        # WID named pipe. Only change this for a non-default WID.
+        [string] $WidInstance = '\\.\pipe\MICROSOFT##WID\tsql\query',
 
+        # Must be this node's FQDN (the default).
         [string] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531,
 
+        # Folder for transcripts. Default C:\ProgramData\WsusMaintenance.
         [string] $LogPath = 'C:\ProgramData\WsusMaintenance',
 
+        # Number of maintenance transcripts to keep (1-520). Default 12.
         [ValidateRange(1, 520)]
         [int] $KeepLogs = 12
     )

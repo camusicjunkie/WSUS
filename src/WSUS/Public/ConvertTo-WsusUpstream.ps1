@@ -9,12 +9,6 @@ function ConvertTo-WsusUpstream {
 
         Throws when the node is already an Upstream. Refuses when the configured upstream still
         answers, unless -Force.
-    .PARAMETER WsusServer
-        Node to promote. Defaults to this machine's FQDN.
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
-    .PARAMETER Force
-        Promote even though the current upstream is still reachable.
     .EXAMPLE
         ConvertTo-WsusUpstream -WhatIf
         Shows what promoting this replica would do.
@@ -27,10 +21,13 @@ function ConvertTo-WsusUpstream {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType('WSUS.PromoteResult')]
     param (
+        # Node to promote. Defaults to this machine's FQDN.
         [string] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531,
 
+        # Promote even though the current upstream is still reachable.
         [switch] $Force
     )
 

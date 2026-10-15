@@ -9,12 +9,6 @@ function New-WsusAdminGroup {
 
         Idempotent: an existing group or membership is left in place. Run once as an AD administrator,
         anywhere the ActiveDirectory module is available.
-    .PARAMETER AdminResourceGroup
-        Resource group to create. Default res.srv.wsus.admin.
-    .PARAMETER AdminIdentityGroup
-        Existing identity group of the admins who manage WSUS. Not created. Default id.sa.platforms.
-    .PARAMETER GroupPath
-        OU distinguished name for the new group. Defaults to the domain's Users container.
     .EXAMPLE
         New-WsusAdminGroup -GroupPath 'OU=Groups,DC=corp,DC=local' -WhatIf
         Shows what would be created without changing AD.
@@ -24,10 +18,13 @@ function New-WsusAdminGroup {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('WSUS.AdminGroup')]
     param (
+        # Resource group to create. Default res.srv.wsus.admin.
         [string] $AdminResourceGroup = 'res.srv.wsus.admin',
 
+        # Existing identity group of the admins who manage WSUS. Not created. Default id.sa.platforms.
         [string] $AdminIdentityGroup = 'id.sa.platforms',
 
+        # OU distinguished name for the new group. Defaults to the domain's Users container.
         [string] $GroupPath
     )
 

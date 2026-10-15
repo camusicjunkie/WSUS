@@ -12,9 +12,11 @@ function Start-WsusLog {
     [CmdletBinding()]
     [OutputType([string])]
     param (
+        # Log name prefix; the transcript is named <Prefix>_<timestamp>.log.
         [Parameter(Mandatory)]
         [string] $Prefix,
 
+        # Folder for the logs, created if missing. Default C:\ProgramData\WsusMaintenance.
         [string] $Path = 'C:\ProgramData\WsusMaintenance'
     )
 

@@ -6,6 +6,7 @@ function Get-WsusNodeRole {
     [CmdletBinding()]
     [OutputType([string])]
     param (
+        # Connected WSUS node (IUpdateServer) to inspect.
         [Parameter(Mandatory)]
         $Wsus
     )

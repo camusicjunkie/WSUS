@@ -10,6 +10,7 @@ function Set-WsusSslBinding {
         Justification = 'Thin seam; the public caller owns ShouldProcess.')]
     [CmdletBinding()]
     param (
+        # Thumbprint of the certificate in Cert:\LocalMachine\My to bind to 8531.
         [Parameter(Mandatory)]
         [string] $Thumbprint
     )

@@ -9,9 +9,11 @@ function Test-WsusCertificate {
     #>
     [CmdletBinding()]
     param (
+        # Thumbprint of the certificate in Cert:\LocalMachine\My.
         [Parameter(Mandatory)]
         [string] $Thumbprint,
 
+        # Names the certificate must cover as SANs.
         [Parameter(Mandatory)]
         [string[]] $RequiredName
     )

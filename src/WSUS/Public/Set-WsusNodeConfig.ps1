@@ -18,15 +18,6 @@ function Set-WsusNodeConfig {
         Under -WhatIf nothing is changed and nothing is returned. A failed self-test writes a
         non-terminating error and still returns the result object. The result has no Role: a fresh
         node has no role until Set-WsusUpstreamConfig or Set-WsusReplicaConfig runs.
-    .PARAMETER SslCertThumbprint
-        Thumbprint of THIS node's certificate in Cert:\LocalMachine\My. SANs must include the VIP FQDN
-        and this node's FQDN.
-    .PARAMETER VipFqdn
-        FQDN clients use through the NetScaler, for example wsus.corp.local.
-    .PARAMETER AdminResourceGroup
-        Resource group added to the local 'WSUS Administrators' group.
-    .PARAMETER Domain
-        NetBIOS domain name of the admin resource group. Defaults to this machine's domain.
     .EXAMPLE
         Set-WsusNodeConfig -SslCertThumbprint '0123456789ABCDEF0123456789ABCDEF01234567' -VipFqdn 'wsus.corp.local' -WhatIf
     .OUTPUTS
@@ -35,19 +26,26 @@ function Set-WsusNodeConfig {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('WSUS.NodeConfig')]
     param (
+        # Thumbprint of this node's certificate in Cert:\LocalMachine\My. SANs must cover the VIP and node FQDNs.
         [Parameter(Mandatory)]
         [ValidatePattern('^[0-9A-Fa-f]{40}$')]
         [string] $SslCertThumbprint,
 
+        # FQDN clients use through the NetScaler, for example wsus.corp.local.
         [Parameter(Mandatory)]
         [string] $VipFqdn,
 
+        # Resource group added to the local 'WSUS Administrators' group.
         [string] $AdminResourceGroup = 'res.srv.wsus.admin',
 
+        # NetBIOS domain name of the admin resource group. Defaults to this machine's domain.
         [string] $Domain = $env:USERDOMAIN
     )
 
     Assert-WsusPrerequisite -Module WebAdministration, UpdateServices -Administrator
+
+    # The IIS: drive only exists once WebAdministration is loaded; module autoload does not create it.
+    Import-Module -Name WebAdministration -ErrorAction Stop
 
     $nodeFqdn = Get-WsusLocalFqdn
     Test-WsusCertificate -Thumbprint $SslCertThumbprint -RequiredName $VipFqdn, $nodeFqdn

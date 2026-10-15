@@ -12,18 +12,6 @@ function Invoke-WsusDecline {
         does nothing (declines come from the upstream): it returns Role = 'Replica', Declined = 0 and
         no log, so the same task can exist on both nodes. The first failure throws; the log is
         closed and retention applied regardless, so Task Scheduler sees the failed run.
-    .PARAMETER RecentDays
-        How many days of recent arrivals to check (1-30). Default 2.
-    .PARAMETER DeclinePattern
-        Regex matched against update titles. Defaults to the pattern shared with Invoke-WsusMaintenance.
-    .PARAMETER WsusServer
-        The upstream node. Defaults to this machine's FQDN.
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
-    .PARAMETER LogPath
-        Folder for transcripts. Default C:\ProgramData\WsusMaintenance.
-    .PARAMETER KeepLogs
-        Number of decline transcripts to keep (1-2000). Default 96.
     .EXAMPLE
         Invoke-WsusDecline -WhatIf
         Lists what the next decline run would decline.
@@ -35,17 +23,23 @@ function Invoke-WsusDecline {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('WSUS.DeclineRun')]
     param (
+        # How many days of recent arrivals to check (1-30). Default 2.
         [ValidateRange(1, 30)]
         [int] $RecentDays = 2,
 
+        # Regex matched against update titles. Defaults to the pattern shared with Invoke-WsusMaintenance.
         [string] $DeclinePattern = (Get-WsusDefaultDeclinePattern),
 
+        # The upstream node. Defaults to this machine's FQDN.
         [string] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531,
 
+        # Folder for transcripts. Default C:\ProgramData\WsusMaintenance.
         [string] $LogPath = 'C:\ProgramData\WsusMaintenance',
 
+        # Number of decline transcripts to keep (1-2000). Default 96.
         [ValidateRange(1, 2000)]
         [int] $KeepLogs = 96
     )

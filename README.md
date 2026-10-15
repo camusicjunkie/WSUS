@@ -121,7 +121,7 @@ Only after the module is installed, run `Register-WsusMaintenanceTask`.
 | 14 | Admin workstation | Create the client GPOs by hand (section 7) |
 | 15 | One client per GPO | `gpupdate /force`, then the client check below. Confirm it shows up in the right group on WSUS01. |
 
-Run the TLS checks before step 14: `https://<node>:8531/selfupdate/wuident.cab` returns 200 on both nodes.
+Run the TLS checks before step 14: `https://<node>:8531/ClientWebService/client.asmx` returns 200 on both nodes.
 
 Client check (run on the client, elevated):
 

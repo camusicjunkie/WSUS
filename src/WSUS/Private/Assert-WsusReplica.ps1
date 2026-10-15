@@ -5,9 +5,11 @@ function Assert-WsusReplica {
     #>
     [CmdletBinding()]
     param (
+        # Connected WSUS node (IUpdateServer) to check.
         [Parameter(Mandatory)]
         $Wsus,
 
+        # Function named in the error as the one to use on an Upstream. Default Set-WsusUpstreamConfig.
         [string] $Instead = 'Set-WsusUpstreamConfig'
     )
 

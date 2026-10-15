@@ -5,9 +5,11 @@ function Get-WsusNewestLog {
     #>
     [CmdletBinding()]
     param (
+        # Log name prefix; files named <Prefix>_*.log are considered.
         [Parameter(Mandatory)]
         [string] $Prefix,
 
+        # Folder holding the logs. Default C:\ProgramData\WsusMaintenance.
         [string] $Path = 'C:\ProgramData\WsusMaintenance'
     )
 

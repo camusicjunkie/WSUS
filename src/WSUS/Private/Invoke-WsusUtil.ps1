@@ -7,6 +7,7 @@ function Invoke-WsusUtil {
     #>
     [CmdletBinding()]
     param (
+        # Arguments passed to wsusutil.exe.
         [Parameter(Mandatory)]
         [string[]] $ArgumentList
     )

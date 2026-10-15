@@ -11,10 +11,6 @@ function Install-WsusNode {
         plain-port WSUS API answers and its content path matches); -Force runs it again. Feature
         install, folder and firewall rule are check-then-act. Never reboots; RestartNeeded says
         whether a restart is required before Set-WsusNodeConfig.
-    .PARAMETER ContentPath
-        Local folder for update content. Use a dedicated data disk of about 100 GB.
-    .PARAMETER Force
-        Run wsusutil postinstall even when the node already looks post-installed.
     .EXAMPLE
         Install-WsusNode -ContentPath 'D:\WSUS' -WhatIf
     .OUTPUTS
@@ -23,9 +19,11 @@ function Install-WsusNode {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('WSUS.NodeInstall')]
     param (
+        # Local folder for update content. Use a dedicated data disk of about 100 GB.
         [ValidatePattern('^[A-Za-z]:\\')]
         [string] $ContentPath = 'D:\WSUS',
 
+        # Run wsusutil postinstall even when the node already looks post-installed.
         [switch] $Force
     )
 

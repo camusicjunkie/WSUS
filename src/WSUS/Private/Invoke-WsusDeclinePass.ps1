@@ -12,14 +12,18 @@ function Invoke-WsusDeclinePass {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([string])]
     param (
+        # Connected WSUS node (IUpdateServer) to decline on.
         [Parameter(Mandatory)]
         $Wsus,
 
+        # Wildcard pattern matched against update titles; matching updates are declined.
         [Parameter(Mandatory)]
         [string] $Pattern,
 
+        # Only consider updates that arrived on or after this moment.
         [datetime] $ArrivedSince,
 
+        # Also decline superseded updates that arrived before this moment.
         [datetime] $SupersededOlderThan
     )
 

@@ -10,6 +10,7 @@ function Set-WsusAppPoolSetting {
         Justification = 'Thin seam; the public caller owns ShouldProcess.')]
     [CmdletBinding()]
     param (
+        # Table of WsusPool property names and the values to set.
         [Parameter(Mandatory)]
         [System.Collections.IDictionary] $Setting
     )

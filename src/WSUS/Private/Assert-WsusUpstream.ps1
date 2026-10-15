@@ -4,16 +4,14 @@ function Assert-WsusUpstream {
         Throws a terminating error when the connected WSUS node is a replica.
     .DESCRIPTION
         Returns nothing on an upstream. The error names the node and the function to use instead.
-    .PARAMETER Wsus
-        The IUpdateServer returned by Connect-WsusNode.
-    .PARAMETER Instead
-        Optional text naming what to do on a replica; appended to the error.
     #>
     [CmdletBinding()]
     param (
+        # The IUpdateServer returned by Connect-WsusNode.
         [Parameter(Mandatory)]
         $Wsus,
 
+        # Optional text naming what to do on a replica; appended to the error.
         [string] $Instead
     )
 

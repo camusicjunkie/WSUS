@@ -7,6 +7,7 @@ function Get-WsusContentDisk {
     #>
     [CmdletBinding()]
     param (
+        # Local content folder; the drive holding it is measured.
         [string] $ContentPath
     )
 

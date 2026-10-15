@@ -5,9 +5,11 @@ function Get-WsusApprovalRuleMatch {
     #>
     [CmdletBinding()]
     param (
+        # Approval rules to filter.
         [AllowEmptyCollection()]
         [object[]] $Rule = @(),
 
+        # Wildcard patterns matched against the rule names.
         [Parameter(Mandatory)]
         [string[]] $Name
     )

@@ -15,12 +15,6 @@ function Register-WsusMaintenanceTask {
 
         Requires an elevated session and the WSUS module installed for all users (the tasks run as
         SYSTEM and can't see a per-user install); throws before registering anything otherwise.
-    .PARAMETER MaintenanceDay
-        Day of the week for the maintenance run. Default Sunday.
-    .PARAMETER MaintenanceTime
-        Time of day (HH:mm) for the maintenance run. Default 02:00.
-    .PARAMETER DeclineIntervalMinutes
-        Minutes between decline runs. Default 15.
     .EXAMPLE
         Register-WsusMaintenanceTask
         Registers both tasks on this node with the default schedule.
@@ -33,11 +27,14 @@ function Register-WsusMaintenanceTask {
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType('WSUS.MaintenanceTask')]
     param (
+        # Day of the week for the maintenance run. Default Sunday.
         [System.DayOfWeek] $MaintenanceDay = 'Sunday',
 
+        # Time of day (HH:mm) for the maintenance run. Default 02:00.
         [ValidatePattern('^([01]?\d|2[0-3]):[0-5]\d$')]
         [string] $MaintenanceTime = '02:00',
 
+        # Minutes between decline runs. Default 15.
         [ValidateRange(1, 1440)]
         [int] $DeclineIntervalMinutes = 15
     )

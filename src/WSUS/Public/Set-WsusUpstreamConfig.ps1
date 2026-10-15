@@ -5,38 +5,6 @@ function Set-WsusUpstreamConfig {
     .DESCRIPTION
         Upstream only (a replica is pointed at ConvertTo-WsusUpstream). Everything set here replicates
         to the replica on its next sync. Also used on a freshly promoted node. Safe to repeat.
-    .PARAMETER WsusServer
-        Node to configure. Defaults to this machine's FQDN.
-    .PARAMETER Port
-        WSUS SSL port. Default 8531.
-    .PARAMETER UpstreamServer
-        Sync from this WSUS server instead of Microsoft Update (for example to chain downstream of DISA).
-    .PARAMETER UpstreamPort
-        Port on the upstream server. 8531 turns on SSL. Default 8531.
-    .PARAMETER ProxyHost
-        Proxy for Microsoft Update. Leave empty for a direct connection.
-    .PARAMETER ProxyPort
-        Proxy port. Default 8080.
-    .PARAMETER Product
-        Product titles to sync. Must match the console titles exactly. A title the server does not
-        know triggers a categories-only sync; one still missing afterwards throws.
-    .PARAMETER Classification
-        Update classifications to sync.
-    .PARAMETER SyncsPerDay
-        Automatic syncs per day (1 to 24). Default 2.
-    .PARAMETER ComputerGroup
-        Computer groups to create. Names must match the client TargetGroup values exactly.
-    .PARAMETER CritSecGroup
-        Groups the 'Auto - Critical and Security' rule approves for. Workstations and Servers are approved
-        later with Approve-WsusRing, once Pilot passes its gate.
-    .PARAMETER DefinitionGroup
-        Groups the 'Auto - Definition Updates' rule approves for.
-    .PARAMETER ApplyRulesNow
-        Also approve the existing backlog through the rules that are currently on (warns when none is).
-        Run Invoke-WsusMaintenance -SupersededAgeDays 0 and Enable-WsusApprovalRule first, or it
-        approves and downloads piles of superseded updates.
-    .PARAMETER FirstSyncUtcHour
-        Hour of the first daily sync, in UTC (0 to 23). Default 2. The replica syncs two hours later.
     .EXAMPLE
         Set-WsusUpstreamConfig -WhatIf
         Shows what would be configured without changing the node.
@@ -46,18 +14,25 @@ function Set-WsusUpstreamConfig {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('WSUS.UpstreamConfig')]
     param (
+        # Node to configure. Defaults to this machine's FQDN.
         [string] $WsusServer = (Get-WsusLocalFqdn),
 
+        # WSUS SSL port. Default 8531.
         [int] $Port = 8531,
 
+        # Sync from this WSUS server instead of Microsoft Update (for example to chain downstream of DISA).
         [string] $UpstreamServer,
 
+        # Port on the upstream server. 8531 turns on SSL. Default 8531.
         [int] $UpstreamPort = 8531,
 
+        # Proxy for Microsoft Update. Leave empty for a direct connection.
         [string] $ProxyHost,
 
+        # Proxy port. Default 8080.
         [int] $ProxyPort = 8080,
 
+        # Product titles to sync, exactly as in the console. Unknown titles trigger a categories-only sync.
         [string[]] $Product = @(
             'Windows 11'
             'Microsoft Server Operating System-21H2'   # Server 2022
@@ -65,20 +40,27 @@ function Set-WsusUpstreamConfig {
             'Microsoft Defender Antivirus'             # Definition updates
         ),
 
+        # Update classifications to sync.
         [string[]] $Classification = @('Critical Updates', 'Security Updates', 'Definition Updates'),
 
+        # Automatic syncs per day (1 to 24). Default 2.
         [ValidateRange(1, 24)]
         [int] $SyncsPerDay = 2,
 
+        # Hour of the first daily sync, in UTC (0 to 23). Default 2. The replica syncs two hours later.
         [ValidateRange(0, 23)]
         [int] $FirstSyncUtcHour = 2,
 
+        # Computer groups to create. Names must match the client TargetGroup values exactly.
         [string[]] $ComputerGroup = @('Packer', 'Pilot', 'Workstations', 'Servers', 'VDI-Definitions'),
 
+        # Groups the 'Auto - Critical and Security' rule approves for. Later rings come from Approve-WsusRing.
         [string[]] $CritSecGroup = @('Packer', 'Pilot'),
 
+        # Groups the 'Auto - Definition Updates' rule approves for.
         [string[]] $DefinitionGroup = @('Packer', 'Pilot', 'Workstations', 'VDI-Definitions'),
 
+        # Also approve the existing backlog through the enabled rules. Run Invoke-WsusMaintenance first.
         [switch] $ApplyRulesNow
     )
 
