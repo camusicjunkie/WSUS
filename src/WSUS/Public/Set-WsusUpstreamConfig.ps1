@@ -51,14 +51,12 @@ function Set-WsusUpstreamConfig {
         [ValidateRange(0, 23)]
         [int] $FirstSyncUtcHour = 2,
 
-        # Computer groups to create. Names must match the client TargetGroup values exactly.
-        [string[]] $ComputerGroup = @('Packer', 'Pilot', 'Workstations', 'Servers', 'VDI-Definitions'),
+        [string[]] $ComputerGroup = @('Packer', 'Pilot', 'Workstations', 'Servers', 'VDI'),
 
         # Groups the 'Auto - Critical and Security' rule approves for. Later rings come from Approve-WsusRing.
         [string[]] $CritSecGroup = @('Packer', 'Pilot'),
 
-        # Groups the 'Auto - Definition Updates' rule approves for.
-        [string[]] $DefinitionGroup = @('Packer', 'Pilot', 'Workstations', 'VDI-Definitions'),
+        [string[]] $DefinitionGroup = @('Packer', 'Pilot', 'Workstations', 'VDI'),
 
         # Also approve the existing backlog through the enabled rules. Run Invoke-WsusMaintenance first.
         [switch] $ApplyRulesNow
