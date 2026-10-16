@@ -1,31 +1,25 @@
 function Stop-WsusLog {
     <#
     .SYNOPSIS
-        Applies log retention for a prefix, then stops the transcript.
+        Applies log retention for a log's kind, then stops the transcript.
     .DESCRIPTION
-        Keeps the newest -Keep logs named '<Prefix>_*.log' in -Path and removes the rest, then stops
-        the transcript even if retention fails. Call it from the caller's finally block. Retention
-        is not subject to -WhatIf.
+        Keeps the newest log.Keep logs named '<Prefix>_*.log' in the log's folder and removes the
+        rest, then stops the transcript even if retention fails. Call it from the caller's finally
+        block. Retention is not subject to -WhatIf.
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
         Justification = 'Closes the run transcript and applies retention; it must happen under -WhatIf too.')]
     [CmdletBinding()]
     param (
-        # Log name prefix whose retention is applied.
+        # The log returned by Start-WsusLog.
         [Parameter(Mandatory)]
-        [string] $Prefix,
-
-        # Folder holding the logs. Default C:\ProgramData\WsusMaintenance.
-        [string] $Path = 'C:\ProgramData\WsusMaintenance',
-
-        # Number of newest logs to keep. Default 12.
-        [int] $Keep = 12
+        $Log
     )
 
     try {
-        Get-ChildItem -Path $Path -Filter ('{0}_*.log' -f $Prefix) -ErrorAction SilentlyContinue |
+        Get-ChildItem -Path $Log.Path -Filter ('{0}_*.log' -f $Log.Prefix) -ErrorAction SilentlyContinue |
             Sort-Object -Property LastWriteTime -Descending |
-            Select-Object -Skip $Keep |
+            Select-Object -Skip $Log.Keep |
             Remove-Item -Force -WhatIf:$false
     }
     finally {

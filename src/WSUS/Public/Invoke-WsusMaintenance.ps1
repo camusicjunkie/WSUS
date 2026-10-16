@@ -44,7 +44,7 @@ function Invoke-WsusMaintenance {
         [int] $Port = 8531,
 
         # Folder for transcripts. Default C:\ProgramData\WsusMaintenance.
-        [string] $LogPath = 'C:\ProgramData\WsusMaintenance',
+        [string] $LogPath = (Get-WsusLogLayout).Root,
 
         # Number of maintenance transcripts to keep (1-520). Default 12.
         [ValidateRange(1, 520)]
@@ -75,7 +75,7 @@ EXEC sp_updatestats;
         throw "Invoke-WsusMaintenance runs on the local node only (WID and logs are local): '$WsusServer' is not '$localFqdn'."
     }
 
-    $log = Start-WsusLog -Prefix maint -Path $LogPath
+    $log = Start-WsusLog -Kind Maintenance -Path $LogPath -Keep $KeepLogs
     try {
         $wsus = Connect-WsusNode -Server $WsusServer -Port $Port
         $role = Get-WsusNodeRole -Wsus $wsus
@@ -110,7 +110,7 @@ EXEC sp_updatestats;
         }
     }
     finally {
-        Stop-WsusLog -Prefix maint -Path $LogPath -Keep $KeepLogs
+        Stop-WsusLog -Log $log
     }
 
     [PSCustomObject]@{
@@ -121,6 +121,6 @@ EXEC sp_updatestats;
         DeclinedUpdates = $declined
         Cleanup         = $cleanup
         Database        = $database
-        Log             = $log
+        Log             = $log.Transcript
     }
 }

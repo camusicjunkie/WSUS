@@ -37,7 +37,7 @@ function Invoke-WsusDecline {
         [int] $Port = 8531,
 
         # Folder for transcripts. Default C:\ProgramData\WsusMaintenance.
-        [string] $LogPath = 'C:\ProgramData\WsusMaintenance',
+        [string] $LogPath = (Get-WsusLogLayout).Root,
 
         # Number of decline transcripts to keep (1-2000). Default 96.
         [ValidateRange(1, 2000)]
@@ -51,13 +51,13 @@ function Invoke-WsusDecline {
     $declined = @()
     $log = $null
     if ($role -eq 'Upstream') {
-        $log = Start-WsusLog -Prefix decline -Path $LogPath
+        $log = Start-WsusLog -Kind Decline -Path $LogPath -Keep $KeepLogs
         try {
             $declined = @(Invoke-WsusDeclinePass -Wsus $wsus -Pattern $DeclinePattern `
                     -ArrivedSince ([datetime]::UtcNow.AddDays(-$RecentDays)))
         }
         finally {
-            Stop-WsusLog -Prefix decline -Path $LogPath -Keep $KeepLogs
+            Stop-WsusLog -Log $log
         }
     }
 
@@ -67,6 +67,6 @@ function Invoke-WsusDecline {
         Role            = $role
         Declined        = $declined.Count
         DeclinedUpdates = $declined
-        Log             = $log
+        Log             = if ($log) { $log.Transcript }
     }
 }

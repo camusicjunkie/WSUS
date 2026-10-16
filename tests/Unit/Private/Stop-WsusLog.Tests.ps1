@@ -8,6 +8,7 @@ AfterAll {
 
 Describe 'Stop-WsusLog' {
     BeforeEach {
+        Mock -ModuleName WSUS Start-Transcript { }
         Mock -ModuleName WSUS Stop-Transcript { }
         $script:folder = Join-Path $TestDrive (New-Guid).Guid
         $null = New-Item -ItemType Directory -Path $script:folder -Force
@@ -19,8 +20,11 @@ Describe 'Stop-WsusLog' {
         }
     }
 
-    It 'keeps the newest logs of its own prefix, leaves other prefixes alone and stops the transcript' {
-        InModuleScope WSUS -Parameters @{ Folder = $script:folder } { Stop-WsusLog -Prefix maint -Path $Folder -Keep 2 }
+    It 'keeps the newest logs of the log''s own kind, leaves other kinds alone and stops the transcript' {
+        InModuleScope WSUS -Parameters @{ Folder = $script:folder } {
+            $log = Start-WsusLog -Kind Maintenance -Path $Folder -Keep 2
+            Stop-WsusLog -Log $log
+        }
 
         (Get-ChildItem -Path $script:folder -Filter 'maint_*').Name | Sort-Object |
             Should -Be @('maint_20260104.log', 'maint_20260105.log')
@@ -28,9 +32,21 @@ Describe 'Stop-WsusLog' {
         Should -Invoke -ModuleName WSUS Stop-Transcript -Times 1 -Exactly
     }
 
-    It 'still stops the transcript when the folder is missing' {
-        InModuleScope WSUS -Parameters @{ Folder = (Join-Path $TestDrive 'nothing') } {
-            Stop-WsusLog -Prefix maint -Path $Folder -Keep 2
+    It 'applies the retention of a decline log to decline files only' {
+        InModuleScope WSUS -Parameters @{ Folder = $script:folder } {
+            $log = Start-WsusLog -Kind Decline -Path $Folder -Keep 3
+            Stop-WsusLog -Log $log
+        }
+
+        @(Get-ChildItem -Path $script:folder -Filter 'decline_*').Count | Should -Be 3
+        @(Get-ChildItem -Path $script:folder -Filter 'maint_*').Count | Should -Be 5
+    }
+
+    It 'still stops the transcript when the folder is gone' {
+        InModuleScope WSUS -Parameters @{ Folder = $script:folder } {
+            $log = Start-WsusLog -Kind Maintenance -Path $Folder -Keep 2
+            Remove-Item -Path $Folder -Recurse -Force
+            Stop-WsusLog -Log $log
         }
 
         Should -Invoke -ModuleName WSUS Stop-Transcript -Times 1 -Exactly

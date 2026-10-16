@@ -36,8 +36,6 @@ function Get-WsusNodeStatus {
 
         $localNames = @($env:COMPUTERNAME, 'localhost')
         try { $localNames += Get-WsusLocalFqdn } catch { Write-Verbose "Local FQDN not resolved: $($_.Exception.Message)" }
-
-        $logRoot = 'C:\ProgramData\WsusMaintenance'
     }
 
     process {
@@ -84,12 +82,12 @@ function Get-WsusNodeStatus {
                     $status.ContentFreePercent = $disk.FreePercent
                 }
 
-                $maintLog = Get-WsusNewestLog -Prefix maint -Path $logRoot
+                $maintLog = Get-WsusNewestLog -Kind Maintenance
                 if ($maintLog) {
                     $status.MaintenanceLogPath = $maintLog.FullName
                     $status.MaintenanceLogLastWriteTime = $maintLog.LastWriteTime
                 }
-                $declineLog = Get-WsusNewestLog -Prefix decline -Path $logRoot
+                $declineLog = Get-WsusNewestLog -Kind Decline
                 if ($declineLog) {
                     $status.DeclineLogPath = $declineLog.FullName
                     $status.DeclineLogLastWriteTime = $declineLog.LastWriteTime

@@ -1,19 +1,22 @@
 function Get-WsusNewestLog {
     <#
     .SYNOPSIS
-        Returns the newest '<Prefix>_*.log' file in a folder, or nothing when there is none.
+        Returns the newest log file of a kind of run, or nothing when there is none.
     #>
     [CmdletBinding()]
     param (
-        # Log name prefix; files named <Prefix>_*.log are considered.
+        # Kind of run whose log to find (see Get-WsusLogLayout).
         [Parameter(Mandatory)]
-        [string] $Prefix,
+        [ValidateSet('Maintenance', 'Decline')]
+        [string] $Kind,
 
-        # Folder holding the logs. Default C:\ProgramData\WsusMaintenance.
-        [string] $Path = 'C:\ProgramData\WsusMaintenance'
+        # Folder holding the logs. Default the log folder in Get-WsusLogLayout.
+        [string] $Path = (Get-WsusLogLayout).Root
     )
 
-    Get-ChildItem -LiteralPath $Path -Filter "${Prefix}_*.log" -File -ErrorAction SilentlyContinue |
+    $prefix = (Get-WsusLogLayout).Prefix[$Kind]
+
+    Get-ChildItem -LiteralPath $Path -Filter "${prefix}_*.log" -File -ErrorAction SilentlyContinue |
         Sort-Object -Property LastWriteTime -Descending |
         Select-Object -First 1
 }
