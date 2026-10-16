@@ -33,7 +33,7 @@ function ConvertTo-WsusUpstream {
 
     Assert-WsusPrerequisite -Module UpdateServices -Administrator
     $wsus = Connect-WsusNode -Server $WsusServer -Port $Port
-    Assert-WsusReplica -Wsus $wsus
+    Assert-WsusRole -Wsus $wsus -Role Replica
 
     $config = $wsus.GetConfiguration()
     $previous = '{0}:{1}' -f $config.UpstreamWsusServerName, $config.UpstreamWsusServerPortNumber

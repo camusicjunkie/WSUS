@@ -40,7 +40,7 @@ function Start-WsusSync {
 
     $wsus = Connect-WsusNode -Server $WsusServer -Port $Port
     if ($CategoryOnly) {
-        Assert-WsusUpstream -Wsus $wsus -Instead 'A categories-only sync fetches from Microsoft; use Start-WsusSync without -CategoryOnly on a replica.'
+        Assert-WsusRole -Wsus $wsus -Role Upstream -Instead 'A categories-only sync fetches from Microsoft; use Start-WsusSync without -CategoryOnly on a replica.'
     }
 
     $mode = if ($CategoryOnly) { 'CategoryOnly' } else { 'Full' }

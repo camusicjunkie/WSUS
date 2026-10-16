@@ -61,7 +61,7 @@ function Set-WsusUpstreamConfig {
     Assert-WsusPrerequisite -Module UpdateServices -Administrator
 
     $wsus = Connect-WsusNode -Server $WsusServer -Port $Port
-    Assert-WsusUpstream -Wsus $wsus -Instead 'Promote it first with ConvertTo-WsusUpstream.'
+    Assert-WsusRole -Wsus $wsus -Role Upstream -Instead 'Promote it first with ConvertTo-WsusUpstream.'
 
     $config = $wsus.GetConfiguration()
     Set-WsusSyncSource -Config $config -MicrosoftUpdate

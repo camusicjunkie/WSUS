@@ -68,7 +68,7 @@ function Approve-WsusRing {
     Assert-WsusPrerequisite -Module UpdateServices
     $wsus = Connect-WsusNode -Server $WsusServer -Port $Port
 
-    Assert-WsusUpstream -Wsus $wsus -Instead 'Approve on the upstream; the replica copies the approvals.'
+    Assert-WsusRole -Wsus $wsus -Role Upstream -Instead 'Approve on the upstream; the replica copies the approvals.'
 
     $allGroups = $wsus.GetComputerTargetGroups()
     $fromGroup = $allGroups | Where-Object { $_.Name -eq $From }
