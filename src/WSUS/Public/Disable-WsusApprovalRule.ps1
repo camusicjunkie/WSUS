@@ -33,21 +33,6 @@ function Disable-WsusApprovalRule {
     }
 
     process {
-        $matching = Get-WsusApprovalRuleMatch -Rule $rules -Name $Name
-        foreach ($rule in $matching) {
-            $changed = $false
-            if ($rule.Enabled -and $PSCmdlet.ShouldProcess("$($rule.Name) on $WsusServer", 'Disable approval rule')) {
-                $rule.Enabled = $false
-                $rule.Save()
-                $changed = $true
-            }
-            [PSCustomObject]@{
-                PSTypeName = 'WSUS.ApprovalRule'
-                Server     = $WsusServer
-                Name       = $rule.Name
-                Enabled    = $rule.Enabled
-                Changed    = $changed
-            }
-        }
+        Set-WsusApprovalRuleState -Rule $rules -Name $Name -Enabled $false -Server $WsusServer
     }
 }

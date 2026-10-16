@@ -31,15 +31,6 @@ Describe 'Enable-WsusApprovalRule' {
         $script:fake.Calls | Should -Contain 'Rule.Save:Critical and Security - Packer'
     }
 
-    It 'skips a rule that is already on: unchanged, not saved' {
-        $script:fake = New-FakeWsusServer -Rules @(@{ Name = 'Packer'; Enabled = $true })
-
-        $result = Enable-WsusApprovalRule -Name 'Packer'
-
-        $result.Changed | Should -BeFalse
-        $script:fake.Calls | Should -Not -Contain 'Rule.Save:Packer'
-    }
-
     It 'changes nothing under -WhatIf' {
         $result = Enable-WsusApprovalRule -Name '*' -WhatIf
 

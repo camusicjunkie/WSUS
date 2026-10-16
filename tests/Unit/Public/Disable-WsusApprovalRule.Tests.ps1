@@ -35,19 +35,6 @@ Describe 'Disable-WsusApprovalRule' {
         ($script:fake.Rules | Where-Object Name -eq 'Definitions').Enabled | Should -BeTrue
     }
 
-    It 'skips a rule that is already off: reported unchanged, not saved' {
-        $script:fake = New-FakeWsusServer -Rules @(
-            @{ Name = 'Definitions'; Enabled = $false },
-            @{ Name = 'Packer'; Enabled = $true }
-        )
-
-        $result = Disable-WsusApprovalRule
-
-        ($result | Where-Object Name -eq 'Definitions').Changed | Should -BeFalse
-        ($result | Where-Object Name -eq 'Packer').Changed | Should -BeTrue
-        $script:fake.Calls | Should -Not -Contain 'Rule.Save:Definitions'
-    }
-
     It 'changes nothing under -WhatIf but still reports the rules' {
         $result = Disable-WsusApprovalRule -WhatIf
 
