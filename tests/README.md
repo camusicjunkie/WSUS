@@ -11,7 +11,7 @@ src/WSUS/Public/<Fn>.ps1    one public function per file, file name = function n
 src/WSUS/Private/<Fn>.ps1   one private helper per file
 tests/Module.Tests.ps1      contract: manifest valid, export list == Public/ files, help on every public function
 tests/Unit/Public/<Fn>.Tests.ps1   one per public function (the main test seam)
-tests/Unit/Private/<Fn>.Tests.ps1  only for helpers with decisions no public test reaches yet
+tests/Unit/Private/<Fn>.Tests.ps1  for helpers shared by several public functions (see "Shared private helpers")
 tests/helpers/TestSetup.ps1        dot-source in BeforeAll; pair with AfterAll { Remove-WsusTestEnvironment }
 tests/helpers/New-FakeWsusServer.ps1   shared fake IUpdateServer
 tests/stubs/<Module>/<Module>.psm1     stub modules
@@ -19,6 +19,31 @@ tests/stubs/<Module>/<Module>.psm1     stub modules
 
 Adding a public function: create `Public/<Name>.ps1`, add the name to `FunctionsToExport` in the
 manifest, add `tests/Unit/Public/<Name>.Tests.ps1`, add a CHANGELOG `Unreleased` line.
+
+## Shared private helpers
+
+A decision that several public functions need lives in one private helper, with its own tests at the
+helper's interface. The public tests then keep only the check that proves the function calls the helper
+(a value the fake does not already have by default), not a copy of the helper's own assertions.
+
+| Helper | Decision it owns |
+|--------|------------------|
+| `Get-WsusEndpoint` | 8531 means SSL; the client web service URL. Used by `Connect-WsusNode`, the upstream probe and `Set-WsusSyncSource`. |
+| `Set-WsusSyncSource`, `Set-WsusSyncSchedule` | Where a node syncs from (Microsoft Update, or an Upstream as a replica) with its content flags, and the sync schedule. |
+| `Get-WsusRingPlan` | The rings in rollout order, the promotion path and the two approval rules. Data only. |
+| `Get-WsusLogLayout`, `Start-WsusLog`, `Stop-WsusLog`, `Get-WsusNewestLog` | The log folder and file prefixes; opening a run log, applying retention and finding the newest log. |
+| `Set-WsusApprovalRuleState` | Matching rules by name and turning them on or off, skipping rules already there. |
+| `Assert-WsusRole`, `Get-WsusNodeRole` | Whether a node is an Upstream or a Replica, and the error when a function needs the other. |
+
+Two patterns to keep when adding a helper:
+
+- Data-only helpers (`Get-WsusRingPlan`, `Get-WsusLogLayout`) return a new object on each call and touch no node,
+  so callers can change what they get without affecting the next call.
+- A helper that changes `IUpdateServerConfiguration` or the subscription (`Set-WsusSyncSource`,
+  `Set-WsusSyncSchedule`) changes the object in memory only. The public function keeps `Save()` and
+  `ShouldProcess`, so its `-WhatIf` text and what is saved stay in one place. A helper that must ask per item
+  (`Set-WsusApprovalRuleState`, `Invoke-WsusDeclinePass`) is `SupportsShouldProcess` itself and follows the
+  caller's `-WhatIf` and `-Confirm`.
 
 ## Running
 

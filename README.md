@@ -9,7 +9,8 @@ Each node has its own Windows Internal Database (WID) and its own content disk. 
 
 Rings (computer groups): `Packer`, `Pilot`, `Workstations`, `Servers`, `VDI`. The names are a
 contract: `Set-WsusUpstreamConfig` creates these groups and the client GPOs (section 7) must use exactly
-these `TargetGroup` values. Terms (node, upstream, replica, promote, ring, approval rule, maintenance run,
+these `TargetGroup` values. The module defines the rings, the promotion path and the two approval rules in one
+place, so `Set-WsusUpstreamConfig` and `Approve-WsusRing` cannot disagree on a name. Terms (node, upstream, replica, promote, ring, approval rule, maintenance run,
 decline run, gate) are defined in [GLOSSARY.md](GLOSSARY.md).
 
 Everything is done with the `WSUS` PowerShell module (Windows PowerShell 5.1). Install it once per node and
@@ -36,6 +37,9 @@ supports `-WhatIf` and `-Confirm`: run with `-WhatIf` first, every time. Every f
 | `Invoke-WsusDecline` | Upstream (or remote) | SYSTEM, scheduled task | Every 15 minutes |
 | `Register-WsusMaintenanceTask` / `Unregister-WsusMaintenanceTask` | Each node | Local admin | Once per node |
 | `Get-WsusNodeStatus` | Anywhere (disk and logs: local only) | WSUS admin | Health checks |
+
+An upstream always syncs from Microsoft Update (`Set-WsusUpstreamConfig` has no parameter for another source). A
+node that syncs from another WSUS node is a replica (`Set-WsusReplicaConfig`).
 
 Not functions: `docs/6-netscaler-wsus.conf` (NetScaler CLI, applied once by a NetScaler admin) and the client
 GPOs (section 7, created by hand in GPMC).

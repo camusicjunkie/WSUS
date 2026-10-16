@@ -22,6 +22,12 @@ All notable changes to the WSUS module are recorded here. The format follows
 
 - README runbook rewritten around function calls: initial build, scheduled tasks, monthly cycle, per-ring client GPO settings table, module install and release runbook.
 
+### Changed
+
+- `Approve-WsusRing`: the default `-Classification` is now taken from the Critical and Security approval rule, so the two cannot drift apart. No change in value.
+- `Set-WsusUpstreamConfig` now also sets `GetContentFromMU = $true`, as a promoted node already had it. `ConvertTo-WsusUpstream` and `Set-WsusReplicaConfig` set the same content flags as `Set-WsusUpstreamConfig`.
+- Internal: shared helpers for the sync source, sync schedule, endpoint, ring plan, run log, approval rule state and role check replace code repeated across public functions. Parameters and output are unchanged except as listed under Removed.
+
 ### Removed
 
 - `1-Install-WsusNode.ps1` and `2-Set-WsusNodeConfig.ps1`, replaced by `Install-WsusNode` and `Set-WsusNodeConfig`.
