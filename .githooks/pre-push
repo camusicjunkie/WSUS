@@ -1,0 +1,6 @@
+#!/bin/sh
+# Run the same check CI runs, so a failure shows up before the push.
+# Enable once per clone: git config core.hooksPath .githooks
+root=$(git rev-parse --show-toplevel)
+if command -v pwsh >/dev/null 2>&1; then shell=pwsh; else shell=powershell; fi
+exec "$shell" -NoProfile -File "$root/build.ps1" -Task All
