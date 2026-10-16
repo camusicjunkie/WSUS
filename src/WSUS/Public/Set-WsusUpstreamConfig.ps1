@@ -45,12 +45,14 @@ function Set-WsusUpstreamConfig {
         [ValidateRange(0, 23)]
         [int] $FirstSyncUtcHour = 2,
 
-        [string[]] $ComputerGroup = @('Packer', 'Pilot', 'Workstations', 'Servers', 'VDI'),
+        # Computer groups to create. Default the rings (see Get-WsusRingPlan).
+        [string[]] $ComputerGroup = (Get-WsusRingPlan).Ring,
 
         # Groups the 'Auto - Critical and Security' rule approves for. Later rings come from Approve-WsusRing.
-        [string[]] $CritSecGroup = @('Packer', 'Pilot'),
+        [string[]] $CritSecGroup = (Get-WsusRingPlan).Rule.CritSec.GroupName,
 
-        [string[]] $DefinitionGroup = @('Packer', 'Pilot', 'Workstations', 'VDI'),
+        # Groups the 'Auto - Definition Updates' rule approves for.
+        [string[]] $DefinitionGroup = (Get-WsusRingPlan).Rule.Definition.GroupName,
 
         # Also approve the existing backlog through the enabled rules. Run Invoke-WsusMaintenance first.
         [switch] $ApplyRulesNow
@@ -121,10 +123,10 @@ function Set-WsusUpstreamConfig {
         $defaultRule.Save()
     }
 
-    $ruleDefinitions = @(
-        @{ Name = 'Auto - Critical and Security'; ClassificationTitle = 'Critical Updates', 'Security Updates'; GroupName = $CritSecGroup }
-        @{ Name = 'Auto - Definition Updates'; ClassificationTitle = 'Definition Updates'; GroupName = $DefinitionGroup }
-    )
+    $plan = Get-WsusRingPlan    # a new object each call, so the group overrides below change nothing else
+    $plan.Rule.CritSec.GroupName = $CritSecGroup
+    $plan.Rule.Definition.GroupName = $DefinitionGroup
+    $ruleDefinitions = @($plan.Rule.CritSec, $plan.Rule.Definition)
     $rules = foreach ($definition in $ruleDefinitions) {
         if ($PSCmdlet.ShouldProcess($definition.Name, 'Create or update auto-approval rule')) {
             Set-WsusApprovalRuleDefinition -Wsus $wsus @definition

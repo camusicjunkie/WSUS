@@ -38,13 +38,14 @@ function Approve-WsusRing {
     [OutputType('WSUS.RingApproval')]
     param (
         # Group whose approvals are promoted. Default Pilot.
-        [string] $From = 'Pilot',
+        [string] $From = (Get-WsusRingPlan).Promotion.From,
 
         # Group or groups that receive the approvals. Default Workstations and Servers.
-        [string[]] $To = @('Workstations', 'Servers'),
+        [string[]] $To = (Get-WsusRingPlan).Promotion.To,
 
-        # Update classifications to promote. Default Critical Updates and Security Updates.
-        [string[]] $Classification = @('Critical Updates', 'Security Updates'),
+        # Update classifications to promote. Default Critical Updates and Security Updates (those the
+        # Critical and Security approval rule approves).
+        [string[]] $Classification = (Get-WsusRingPlan).Promotion.ClassificationTitle,
 
         # Days an update must have been approved for -From before it can be promoted. Default 5.
         [ValidateRange(0, 60)]
