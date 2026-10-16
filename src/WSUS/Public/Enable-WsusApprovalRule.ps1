@@ -11,6 +11,8 @@ function Enable-WsusApprovalRule {
     .OUTPUTS
         WSUS.ApprovalRule
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '',
+        Justification = 'ShouldProcess is called per rule by Set-WsusApprovalRuleState, which inherits the -WhatIf and -Confirm.')]
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     [OutputType('WSUS.ApprovalRule')]
     param (
