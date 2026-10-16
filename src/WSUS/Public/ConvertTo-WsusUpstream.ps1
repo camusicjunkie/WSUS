@@ -48,11 +48,7 @@ function ConvertTo-WsusUpstream {
     }
 
     if ($PSCmdlet.ShouldProcess($WsusServer, 'Promote replica to Upstream (sync from Microsoft Update)')) {
-        $config.IsReplicaServer = $false
-        $config.SyncFromMicrosoftUpdate = $true
-        $config.UpstreamWsusServerName = ''
-        $config.UpstreamWsusServerPortNumber = 0
-        $config.GetContentFromMU = $true
+        Set-WsusSyncSource -Config $config -MicrosoftUpdate
         $config.Save()
     }
 

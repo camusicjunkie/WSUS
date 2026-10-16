@@ -23,10 +23,9 @@ Describe 'Set-WsusUpstreamConfig' {
 
             $result.PSObject.TypeNames | Should -Contain 'WSUS.UpstreamConfig'
             $result.Server | Should -Be 'wsus01.contoso.local'
-            $result.Upstream | Should -Be 'Microsoft Update'
+            $result.PSObject.Properties.Name | Should -Not -Contain 'Upstream'
             $script:fake.Config.SyncFromMicrosoftUpdate | Should -BeTrue
-            $script:fake.Config.TargetingMode | Should -Be 'Client'
-            $script:fake.Config.DownloadUpdateBinariesAsNeeded | Should -BeTrue
+            $script:fake.Config.TargetingMode | Should -Be 'Client'    # proves Set-WsusSyncSource ran; the flags are tested there
             $script:fake.Calls | Should -Contain 'Config.Save'
         }
 
@@ -36,19 +35,10 @@ Describe 'Set-WsusUpstreamConfig' {
             $script:fake.Calls | Should -Not -Contain 'Config.Save'
         }
 
-        It 'chains to an upstream server and turns on SSL for port 8531' {
-            $result = Set-WsusUpstreamConfig -UpstreamServer 'disa.mil.local' -UpstreamPort 8531
-
-            $result.Upstream | Should -Be 'disa.mil.local'
-            $script:fake.Config.SyncFromMicrosoftUpdate | Should -BeFalse
-            $script:fake.Config.UpstreamWsusServerName | Should -Be 'disa.mil.local'
-            $script:fake.Config.UpstreamWsusServerPortNumber | Should -Be 8531
-            $script:fake.Config.UpstreamWsusServerUseSsl | Should -BeTrue
-        }
-
-        It 'leaves SSL off for a chained upstream on another port' {
-            Set-WsusUpstreamConfig -UpstreamServer 'disa.mil.local' -UpstreamPort 8530 | Out-Null
-            $script:fake.Config.UpstreamWsusServerUseSsl | Should -BeFalse
+        It 'always syncs from Microsoft Update: it has no parameter for another upstream' {
+            $parameters = (Get-Command -Name Set-WsusUpstreamConfig).Parameters.Keys
+            $parameters | Should -Not -Contain 'UpstreamServer'
+            $parameters | Should -Not -Contain 'UpstreamPort'
         }
 
         It 'uses a proxy only when -ProxyHost is given' {
@@ -61,13 +51,11 @@ Describe 'Set-WsusUpstreamConfig' {
             $script:fake.Config.ProxyServerPort | Should -Be 3128
         }
 
-        It 'applies the storage, language and approval-refresh settings' {
+        It 'applies the language and approval-refresh settings' {
             Set-WsusUpstreamConfig | Out-Null
 
             $script:fake.Config.AllUpdateLanguagesEnabled | Should -BeFalse
             $script:fake.Config.EnabledUpdateLanguages | Should -Be @('en')
-            $script:fake.Config.DownloadExpressPackages | Should -BeFalse
-            $script:fake.Config.HostBinariesOnMicrosoftUpdate | Should -BeFalse
             $script:fake.Config.AutoApproveWsusInfrastructureUpdates | Should -BeTrue
             $script:fake.Config.AutoRefreshUpdateApprovals | Should -BeTrue
             $script:fake.Config.AutoRefreshUpdateApprovalsDeclineExpired | Should -BeTrue
@@ -86,7 +74,6 @@ Describe 'Set-WsusUpstreamConfig' {
             $sub = $script:fake.Subscription
             $sub.UpdateCategories | Should -Be $script:allProducts
             $sub.UpdateClassifications | Should -Be @('Critical Updates', 'Security Updates', 'Definition Updates')
-            $sub.SynchronizeAutomatically | Should -BeTrue
             $sub.NumberOfSynchronizationsPerDay | Should -Be 2
             $sub.SynchronizeAutomaticallyTimeOfDay | Should -Be ([timespan]::FromHours(2))
             $script:fake.Calls | Should -Contain 'Subscription.Save'
@@ -150,9 +137,9 @@ Describe 'Set-WsusUpstreamConfig' {
             $result = Set-WsusUpstreamConfig
 
             $script:fake.Calls | Should -Contain 'CreateGroup:Packer'
-            $script:fake.Calls | Should -Contain 'CreateGroup:VDI-Definitions'
+            $script:fake.Calls | Should -Contain 'CreateGroup:VDI'
             @($script:fake.GetComputerTargetGroups().Name) | Should -Contain 'Workstations'
-            $result.Groups | Should -Be 'Packer, Pilot, Workstations, Servers, VDI-Definitions'
+            $result.Groups | Should -Be 'Packer, Pilot, Workstations, Servers, VDI'
         }
 
         It 'creates only the groups that are missing, so a re-run creates none' {
@@ -180,7 +167,7 @@ Describe 'Set-WsusUpstreamConfig' {
             $definition = $script:fake.GetInstallApprovalRules() | Where-Object Name -EQ 'Auto - Definition Updates'
             $definition.Enabled | Should -BeFalse
             $definition.Classifications | Should -Be @('Definition Updates')
-            $definition.Groups | Should -Be @('Packer', 'Pilot', 'Workstations', 'VDI-Definitions')
+            $definition.Groups | Should -Be @('Packer', 'Pilot', 'Workstations', 'VDI')
             $result.Rules | Should -Be 'Auto - Critical and Security (Off); Auto - Definition Updates (Off)'
         }
 

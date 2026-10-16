@@ -69,7 +69,7 @@ function Set-WsusReplicaConfig {
             }
         }
 
-        $probeUri = Get-WsusClientServiceUri -Fqdn $UpstreamFqdn -Port $UpstreamPort
+        $probeUri = (Get-WsusEndpoint -Fqdn $UpstreamFqdn -Port $UpstreamPort).ClientServiceUri
         if ($WhatIfPreference) {
             Write-Information -MessageData "What if: would probe $probeUri" -InformationAction Continue
         }
@@ -81,24 +81,12 @@ function Set-WsusReplicaConfig {
     $subscription = $wsus.GetSubscription()
 
     if ($PSCmdlet.ShouldProcess($WsusServer, "Make replica of ${UpstreamFqdn}:$UpstreamPort")) {
-        $config.SyncFromMicrosoftUpdate = $false
-        $config.UpstreamWsusServerName = $UpstreamFqdn
-        $config.UpstreamWsusServerPortNumber = $UpstreamPort
-        $config.UpstreamWsusServerUseSsl = ($UpstreamPort -eq 8531)
-        $config.IsReplicaServer = $true
-        $config.GetContentFromMU = $false
-        $config.DownloadExpressPackages = $false
-        $config.DownloadUpdateBinariesAsNeeded = $true
-        $config.HostBinariesOnMicrosoftUpdate = $false
-        $config.TargetingMode = 'Client'
-        $config.UseProxy = $false
+        Set-WsusSyncSource -Config $config -UpstreamFqdn $UpstreamFqdn -UpstreamPort $UpstreamPort
         $config.Save()
     }
 
     if ($PSCmdlet.ShouldProcess($WsusServer, 'Save sync schedule')) {
-        $subscription.SynchronizeAutomatically = $true
-        $subscription.SynchronizeAutomaticallyTimeOfDay = New-TimeSpan -Hours $FirstSyncUtcHour
-        $subscription.NumberOfSynchronizationsPerDay = $SyncsPerDay
+        Set-WsusSyncSchedule -Subscription $subscription -SyncsPerDay $SyncsPerDay -FirstSyncUtcHour $FirstSyncUtcHour
         $subscription.Save()
     }
 

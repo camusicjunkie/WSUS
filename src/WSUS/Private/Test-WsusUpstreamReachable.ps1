@@ -3,9 +3,8 @@ function Test-WsusUpstreamReachable {
     .SYNOPSIS
         Returns $true when an upstream WSUS node answers on its port.
     .DESCRIPTION
-        Test seam over the request for the node's client web service (see Get-WsusClientServiceUri;
-        https on 8531, http otherwise). Makes no
-        decisions; callers decide what an unreachable upstream means.
+        Test seam over the request for the node's client web service (see Get-WsusEndpoint;
+        https on 8531, http otherwise). Makes no decisions; callers decide what an unreachable upstream means.
     #>
     [CmdletBinding()]
     [OutputType([bool])]
@@ -19,7 +18,7 @@ function Test-WsusUpstreamReachable {
     )
 
     try {
-        $null = Invoke-WebRequest -Uri (Get-WsusClientServiceUri -Fqdn $Fqdn -Port $Port) -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
+        $null = Invoke-WebRequest -Uri (Get-WsusEndpoint -Fqdn $Fqdn -Port $Port).ClientServiceUri -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
         $true
     }
     catch {

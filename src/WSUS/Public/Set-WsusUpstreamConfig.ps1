@@ -20,12 +20,6 @@ function Set-WsusUpstreamConfig {
         # WSUS SSL port. Default 8531.
         [int] $Port = 8531,
 
-        # Sync from this WSUS server instead of Microsoft Update (for example to chain downstream of DISA).
-        [string] $UpstreamServer,
-
-        # Port on the upstream server. 8531 turns on SSL. Default 8531.
-        [int] $UpstreamPort = 8531,
-
         # Proxy for Microsoft Update. Leave empty for a direct connection.
         [string] $ProxyHost,
 
@@ -68,15 +62,7 @@ function Set-WsusUpstreamConfig {
     Assert-WsusUpstream -Wsus $wsus -Instead 'Promote it first with ConvertTo-WsusUpstream.'
 
     $config = $wsus.GetConfiguration()
-    if ($UpstreamServer) {
-        $config.SyncFromMicrosoftUpdate = $false
-        $config.UpstreamWsusServerName = $UpstreamServer
-        $config.UpstreamWsusServerPortNumber = $UpstreamPort
-        $config.UpstreamWsusServerUseSsl = ($UpstreamPort -eq 8531)
-    }
-    else {
-        $config.SyncFromMicrosoftUpdate = $true
-    }
+    Set-WsusSyncSource -Config $config -MicrosoftUpdate
     $config.UseProxy = [bool] $ProxyHost
     if ($ProxyHost) {
         $config.ProxyName = $ProxyHost
@@ -85,10 +71,6 @@ function Set-WsusUpstreamConfig {
 
     $config.AllUpdateLanguagesEnabled = $false
     $config.SetEnabledUpdateLanguages('en')
-    $config.DownloadExpressPackages = $false          # express files balloon content size
-    $config.HostBinariesOnMicrosoftUpdate = $false    # clients pull content from WSUS
-    $config.DownloadUpdateBinariesAsNeeded = $true    # download content only once approved
-    $config.TargetingMode = 'Client'                  # groups come from client policy
     $config.AutoApproveWsusInfrastructureUpdates = $true
     $config.AutoRefreshUpdateApprovals = $true        # approve new revisions of approved updates
     $config.AutoRefreshUpdateApprovalsDeclineExpired = $true
@@ -119,9 +101,7 @@ function Set-WsusUpstreamConfig {
 
     $subscription.SetUpdateCategories($products)
     $subscription.SetUpdateClassifications($classifications)
-    $subscription.SynchronizeAutomatically = $true
-    $subscription.SynchronizeAutomaticallyTimeOfDay = New-TimeSpan -Hours $FirstSyncUtcHour
-    $subscription.NumberOfSynchronizationsPerDay = $SyncsPerDay
+    Set-WsusSyncSchedule -Subscription $subscription -SyncsPerDay $SyncsPerDay -FirstSyncUtcHour $FirstSyncUtcHour
     if ($PSCmdlet.ShouldProcess($WsusServer, 'Save products, classifications and sync schedule')) {
         $subscription.Save()
     }
@@ -175,7 +155,6 @@ function Set-WsusUpstreamConfig {
     [PSCustomObject]@{
         PSTypeName = 'WSUS.UpstreamConfig'
         Server     = $WsusServer
-        Upstream   = if ($UpstreamServer) { $UpstreamServer } else { 'Microsoft Update' }
         Products   = @($products | ForEach-Object Title)
         Classification = $Classification -join ', '
         Groups     = $ComputerGroup -join ', '

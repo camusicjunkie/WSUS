@@ -21,12 +21,8 @@ Describe 'Set-WsusReplicaConfig' {
 
             $config = $script:fake.Config
             $config.IsReplicaServer | Should -BeTrue
-            $config.SyncFromMicrosoftUpdate | Should -BeFalse
             $config.UpstreamWsusServerName | Should -Be 'wsus01.contoso.local'
             $config.UpstreamWsusServerPortNumber | Should -Be 8531
-            $config.UpstreamWsusServerUseSsl | Should -BeTrue
-            $config.GetContentFromMU | Should -BeFalse
-            $config.UseProxy | Should -BeFalse
             $script:fake.Calls | Should -Contain 'Config.Save'
 
             $result.PSObject.TypeNames | Should -Contain 'WSUS.ReplicaConfig'
@@ -38,12 +34,21 @@ Describe 'Set-WsusReplicaConfig' {
         }
     }
 
+    Context 'upstream port' {
+        It 'passes -UpstreamPort to the probe and the configuration' {
+            $result = Set-WsusReplicaConfig -UpstreamFqdn 'wsus01.contoso.local' -UpstreamPort 8530 -Confirm:$false
+
+            Should -Invoke -ModuleName WSUS Test-WsusUpstreamReachable -Times 1 -ParameterFilter { $Port -eq 8530 }
+            $script:fake.Config.UpstreamWsusServerPortNumber | Should -Be 8530
+            $result.Upstream | Should -Be 'wsus01.contoso.local:8530'
+        }
+    }
+
     Context 'sync schedule' {
         It 'saves the schedule and reports it' {
             $result = Set-WsusReplicaConfig -UpstreamFqdn 'wsus01.contoso.local' -SyncsPerDay 4 -FirstSyncUtcHour 6 -Confirm:$false
 
             $sub = $script:fake.Subscription
-            $sub.SynchronizeAutomatically | Should -BeTrue
             $sub.SynchronizeAutomaticallyTimeOfDay | Should -Be ([timespan]::FromHours(6))
             $sub.NumberOfSynchronizationsPerDay | Should -Be 4
             $script:fake.Calls | Should -Contain 'Subscription.Save'

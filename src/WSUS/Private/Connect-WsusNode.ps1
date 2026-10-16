@@ -17,12 +17,12 @@ function Connect-WsusNode {
         [int] $Port = 8531
     )
 
-    $useSsl = $Port -eq 8531
+    $endpoint = Get-WsusEndpoint -Fqdn $Server -Port $Port
     try {
-        Get-WsusServer -Name $Server -PortNumber $Port -UseSsl:$useSsl -ErrorAction Stop
+        Get-WsusServer -Name $Server -PortNumber $Port -UseSsl:$endpoint.UseSsl -ErrorAction Stop
     }
     catch {
-        $protocol = if ($useSsl) { 'SSL' } else { 'no SSL' }
+        $protocol = if ($endpoint.UseSsl) { 'SSL' } else { 'no SSL' }
         throw "Cannot connect to WSUS node '$Server' on port $Port ($protocol): $($_.Exception.Message)"
     }
 }

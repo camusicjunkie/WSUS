@@ -29,3 +29,4 @@ All notable changes to the WSUS module are recorded here. The format follows
 - `0-New-WsusAdminGroup.ps1`, replaced by `New-WsusAdminGroup`.
 - `5-Invoke-WsusMaintenance.ps1`, replaced by `Invoke-WsusMaintenance` and `Invoke-WsusDecline`. Register the tasks with `Register-WsusMaintenanceTask` (the script's task snippet is gone).
 - `7-New-WsusClientGpo.ps1`. Client GPOs are created by hand; there is no replacement function.
+- `Set-WsusUpstreamConfig -UpstreamServer` and `-UpstreamPort`, and the `Upstream` property of its `WSUS.UpstreamConfig` output. An Upstream always syncs from Microsoft Update; a node that syncs from another Upstream is a Replica (`Set-WsusReplicaConfig`).

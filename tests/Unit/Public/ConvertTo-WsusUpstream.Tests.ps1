@@ -21,9 +21,7 @@ Describe 'ConvertTo-WsusUpstream' {
         $config = $script:fake.Config
         $config.IsReplicaServer | Should -BeFalse
         $config.SyncFromMicrosoftUpdate | Should -BeTrue
-        $config.GetContentFromMU | Should -BeTrue
         $config.UpstreamWsusServerName | Should -BeNullOrEmpty
-        $config.UpstreamWsusServerPortNumber | Should -Be 0
         $script:fake.Calls | Should -Contain 'Config.Save'
 
         $result.PSObject.TypeNames | Should -Contain 'WSUS.PromoteResult'

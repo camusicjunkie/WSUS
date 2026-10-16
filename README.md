@@ -7,7 +7,7 @@ Two Server Core WSUS nodes behind the NetScaler VIP `wsus.corp.local`:
 
 Each node has its own Windows Internal Database (WID) and its own content disk. Nothing is shared.
 
-Rings (computer groups): `Packer`, `Pilot`, `Workstations`, `Servers`, `VDI-Definitions`. The names are a
+Rings (computer groups): `Packer`, `Pilot`, `Workstations`, `Servers`, `VDI`. The names are a
 contract: `Set-WsusUpstreamConfig` creates these groups and the client GPOs (section 7) must use exactly
 these `TargetGroup` values. Terms (node, upstream, replica, promote, ring, approval rule, maintenance run,
 decline run, gate) are defined in [GLOSSARY.md](GLOSSARY.md).
@@ -181,7 +181,7 @@ That is 04:00 local in summer, 03:00 in winter.
 | Fri, week 2 | — | Check "Needed" counts on WSUS01 for stragglers (machines that were off) |
 
 Definition updates skip all of this. They approve automatically for Packer, Pilot, Workstations and
-VDI-Definitions as soon as they sync.
+VDI as soon as they sync.
 
 **The gate.** `Approve-WsusRing` promotes Critical and Security updates approved for `-From` (Pilot) to `-To`
 (Workstations, Servers) only if every rule holds:
@@ -237,7 +237,7 @@ values are under `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`, `...\
 | WSUS - Workstations | `Workstations` | Wednesday (4) | Workstation OUs | Authenticated Users |
 | WSUS - Servers | `Servers` | Thursday (5) | Server OUs | Authenticated Users |
 | WSUS - Pilot | `Pilot` | Thursday (5) | Workstation and server OUs, **link order 1** | `res.ent.wsus.pilot` gets Apply; Authenticated Users keeps Read only |
-| WSUS - VDI | `VDI-Definitions` | none (definitions only) | VDA OU | Authenticated Users |
+| WSUS - VDI | `VDI` | none (definitions only) | VDA OU | Authenticated Users |
 
 Install days use 1 = Sunday … 7 = Saturday.
 

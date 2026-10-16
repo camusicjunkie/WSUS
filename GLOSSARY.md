@@ -8,7 +8,9 @@
 
 **Promote**: Turn a replica into an upstream. Used only when the original upstream is lost for good.
 
-**Ring**: A computer group that receives approved updates at a stage of the rollout (Packer, Pilot, Workstations, Servers, VDI-Definitions).
+**Sync source**: Where a node gets its updates from: Microsoft Update, or an Upstream.
+
+**Ring**: A computer group that receives approved updates at a stage of the rollout (Packer, Pilot, Workstations, Servers, VDI).
 
 **Approval rule**: An automatic rule on the upstream that approves arriving updates for a ring. Rules are created off and turned on deliberately.
 
