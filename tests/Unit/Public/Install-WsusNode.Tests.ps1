@@ -103,6 +103,8 @@ Describe 'Install-WsusNode postinstall, folder and firewall' {
     }
 
     It 'skips postinstall when the node already answers on the plain port with the same content path' {
+        # WSUS reports the WsusContent folder postinstall created under CONTENT_DIR.
+        $script:fake = New-FakeWsusServer -Name 'wsus01.contoso.local' -ContentPath 'D:\WSUS\WsusContent'
         Mock -ModuleName WSUS Get-WsusServer { $script:fake }
 
         $null = Install-WsusNode -ContentPath 'D:\WSUS'
