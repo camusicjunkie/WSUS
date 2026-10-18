@@ -47,7 +47,8 @@ function Install-WsusNode {
     $postInstalled = $false
     try {
         $existing = Get-WsusServer -Name (Get-WsusLocalFqdn) -PortNumber 8530 -ErrorAction Stop
-        $postInstalled = $existing.GetConfiguration().LocalContentCachePath -eq $ContentPath
+        # postinstall appends WsusContent to CONTENT_DIR, and the API reports that folder.
+        $postInstalled = $existing.GetConfiguration().LocalContentCachePath -eq [System.IO.Path]::Combine($ContentPath, 'WsusContent')
     }
     catch {
         Write-Verbose "Node does not answer on the plain port yet: $($_.Exception.Message)"

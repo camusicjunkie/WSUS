@@ -62,7 +62,7 @@ function Set-WsusReplicaConfig {
             $builtInGroups = 'All Computers', 'Unassigned Computers'
             $customGroups = @($wsus.GetComputerTargetGroups() | Where-Object { $_.Name -notin $builtInGroups })
             $customRules = @($wsus.GetInstallApprovalRules() | Where-Object { $_.Name -ne 'Default Automatic Approval Rule' })
-            $approvals = @($wsus.GetUpdateApprovals((New-Object -TypeName Microsoft.UpdateServices.Administration.UpdateApprovalScope)))
+            $approvals = @($wsus.GetUpdateApprovals((New-Object -TypeName Microsoft.UpdateServices.Administration.UpdateScope)))
             if ($customGroups.Count -or $customRules.Count -or $approvals.Count) {
                 throw ("$WsusServer is an Upstream with its own state ($($customGroups.Count) custom computer group(s), " +
                     "$($customRules.Count) approval rule(s), $($approvals.Count) approval(s)). Making it a replica discards that. Use -Force to continue.")
