@@ -50,7 +50,8 @@ function Set-WsusSyncSource {
         $Config.IsReplicaServer = $false
         $Config.SyncFromMicrosoftUpdate = $true
         $Config.UpstreamWsusServerName = ''
-        $Config.UpstreamWsusServerPortNumber = 0
+        # The API rejects 0; 80 is its default and is ignored while SyncFromMicrosoftUpdate is true.
+        $Config.UpstreamWsusServerPortNumber = 80
         $Config.GetContentFromMU = $true
     }
 

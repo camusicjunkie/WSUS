@@ -24,7 +24,7 @@ Describe 'Set-WsusSyncSource' {
 
         It 'clears the upstream and downloads content from Microsoft Update' {
             $script:config.UpstreamWsusServerName | Should -Be ''
-            $script:config.UpstreamWsusServerPortNumber | Should -Be 0
+            $script:config.UpstreamWsusServerPortNumber | Should -Be 80
             $script:config.GetContentFromMU | Should -BeTrue
         }
 
