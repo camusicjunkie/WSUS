@@ -101,6 +101,34 @@ Describe 'Set-WsusReplicaConfig' {
             { Set-WsusReplicaConfig -UpstreamFqdn 'wsus01.contoso.local' -Confirm:$false } | Should -Throw '*-Force*'
         }
 
+        It 'turns the approval rules off and reports them when demoting with -Force' {
+            $script:fake = New-FakeWsusServer -Name 'wsus02.contoso.local' -Rules @(
+                @{ Name = 'Default Automatic Approval Rule'; Enabled = $false },
+                @{ Name = 'Auto - Servers'; Enabled = $true },
+                @{ Name = 'Auto - Definitions'; Enabled = $false })
+
+            $result = Set-WsusReplicaConfig -UpstreamFqdn 'wsus01.contoso.local' -Force -Confirm:$false
+
+            ($script:fake.Rules | Where-Object Name -EQ 'Auto - Servers').Enabled | Should -BeFalse
+            $script:fake.Calls | Should -Not -Contain 'Rule.Save:Default Automatic Approval Rule'
+            $result.DisabledRules | Should -Be @('Auto - Servers')
+            $script:fake.Config.IsReplicaServer | Should -BeTrue
+        }
+
+        It 'leaves the rules on under -WhatIf' {
+            $script:fake = New-FakeWsusServer -Name 'wsus02.contoso.local' -Rules @(@{ Name = 'Auto - Servers'; Enabled = $true })
+
+            Set-WsusReplicaConfig -UpstreamFqdn 'wsus01.contoso.local' -Force -WhatIf | Out-Null
+
+            $script:fake.Rules[0].Enabled | Should -BeTrue
+        }
+
+        It 'disables nothing on a fresh node' {
+            $result = Set-WsusReplicaConfig -UpstreamFqdn 'wsus01.contoso.local' -Confirm:$false
+
+            $result.DisabledRules | Should -BeNullOrEmpty
+        }
+
         It 'reconfigures an existing replica without needing -Force' {
             $script:fake = New-FakeWsusServer -Name 'wsus02.contoso.local' -IsReplica $true -UpstreamName 'old.contoso.local' -ComputerGroups 'All Computers', 'Pilot'
 

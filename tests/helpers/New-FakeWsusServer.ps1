@@ -205,5 +205,11 @@ function New-FakeWsusServer {
         UpdateCount = 0; ApprovedUpdateCount = 0; DeclinedUpdateCount = 0
     })
     $fake | Add-Member -MemberType ScriptMethod -Name GetStatus -Value { $this.Calls.Add('GetStatus'); $this.Status }
+    # IUpdateServer.GetContentDownloadProgress and GetFailedToDownloadUpdatesCount. Tests set $fake.Download.
+    $fake | Add-Member -NotePropertyName Download -NotePropertyValue ([PSCustomObject] @{
+        TotalBytesToDownload = 0; DownloadedBytes = 0; FailedCount = 0
+    })
+    $fake | Add-Member -MemberType ScriptMethod -Name GetContentDownloadProgress -Value { $this.Download }
+    $fake | Add-Member -MemberType ScriptMethod -Name GetFailedToDownloadUpdatesCount -Value { $this.Download.FailedCount }
     $fake
 }

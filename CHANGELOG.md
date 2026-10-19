@@ -24,6 +24,8 @@ All notable changes to the WSUS module are recorded here. The format follows
 
 ### Changed
 
+- `Set-WsusReplicaConfig -Force` on an upstream that has its own state now turns its approval rules off first and reports them in `DisabledRules` (#37).
+- `Get-WsusNodeStatus` reports `DownloadPendingMB` and `DownloadFailedCount`. A replica only receives an approved update once the upstream has its content, so the runbook now waits for the upstream's downloads before comparing approval counts (#37).
 - `Approve-WsusRing`: the default `-Classification` is now taken from the Critical and Security approval rule, so the two cannot drift apart. No change in value.
 - `Set-WsusUpstreamConfig` now also sets `GetContentFromMU = $true`, as a promoted node already had it. `ConvertTo-WsusUpstream` and `Set-WsusReplicaConfig` set the same content flags as `Set-WsusUpstreamConfig`.
 - Internal: shared helpers for the sync source, sync schedule, endpoint, ring plan, run log, approval rule state and role check replace code repeated across public functions. Parameters and output are unchanged except as listed under Removed.
