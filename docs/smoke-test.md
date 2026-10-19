@@ -111,9 +111,10 @@ before syncing a downstream node from it (a sync against a node still servicing 
 - [ ] After the failover, reverse the roles: `ConvertTo-WsusUpstream -Force` on the old upstream, `Set-WsusUpstreamConfig`,
       `Enable-WsusApprovalRule`, `Start-WsusSync -Wait`, then `Set-WsusReplicaConfig -UpstreamFqdn <it> -Force -SyncNow`
       on the other node. Every step succeeds, `DisabledRules` lists the demoted node's rules and they are off.
-- [ ] Right after the upstream's sync, its `DownloadPendingMB` is above 0 and the replica's `ApprovedUpdateCount` can be
-      lower than the upstream's (#37: 6 against 13). Once the upstream's `DownloadPendingMB` is 0, `Start-WsusSync -Wait`
-      on the replica: update, approved and declined counts match on both nodes.
+- [ ] Right after the upstream's sync, its `DownloadPendingMB` is above 0 and the replica's `UpdateCount` and
+      `ApprovedUpdateCount` can be lower than the upstream's (#37: 6 against 13; on 2026-10-19, 344/13 against 346/15).
+      A few minutes after the upstream's `DownloadPendingMB` reaches 0, `Start-WsusSync -Wait` on the replica: update,
+      approved and declined counts match on both nodes. (A sync within a minute of reaching 0 still lacked one approval.)
 
 ## Checking on a node
 
