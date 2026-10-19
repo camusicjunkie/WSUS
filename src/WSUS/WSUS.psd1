@@ -1,6 +1,6 @@
 @{
     RootModule            = 'WSUS.psm1'
-    ModuleVersion         = '0.1.0'
+    ModuleVersion         = '1.0.0'
     GUID                  = 'eebe41de-1325-4a9f-b899-914cde34c8cc'
     Author                = 'John Steele'
     CompanyName           = 'Unknown'
