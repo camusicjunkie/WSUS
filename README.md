@@ -347,10 +347,11 @@ configured upstream without `-Force`. The first sync copies every approval and d
 from the upstream.
 
 A replica only receives an approved update once the upstream has downloaded that update's content (#37). Right
-after the upstream syncs from Microsoft or approves updates, the replica's `ApprovedUpdateCount` can be lower, and
-syncing the replica again does not help until the download finishes. Wait for the upstream's `DownloadPendingMB` to
-reach 0 (and `DownloadFailedCount` to be 0), then `Start-WsusSync -Wait` on the replica, or let its next scheduled sync
-catch up.
+after the upstream syncs from Microsoft or approves updates, the replica's `UpdateCount` and `ApprovedUpdateCount` can
+be lower, and syncing the replica again does not help until the download finishes. Wait for the upstream's
+`DownloadPendingMB` to reach 0 (and `DownloadFailedCount` to be 0), give it a few more minutes, then `Start-WsusSync -Wait`
+on the replica, or let its next scheduled sync catch up. A replica sync within a minute of the download finishing
+has missed the last approval; one three minutes later got it.
 
 ## 13. Repair or reinstall WSUS on a node
 

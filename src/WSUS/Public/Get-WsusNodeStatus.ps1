@@ -7,7 +7,7 @@ function Get-WsusNodeStatus {
         is running with its phase and progress), the update, approved and declined counts, and content still
         to download (DownloadPendingMB, DownloadFailedCount) work remotely. A replica only receives an approved
         update once its upstream has downloaded that update's content (#37), so check the upstream's
-        DownloadPendingMB is 0 before expecting the replica's ApprovedUpdateCount to match.
+        DownloadPendingMB has been 0 for a few minutes before expecting the replica's counts to match.
         Content disk and maintenance/decline log facts can only be read on this machine, so for any other
         -WsusServer those properties are $null.
 
