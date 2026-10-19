@@ -11,7 +11,7 @@ All notable changes to the WSUS module are recorded here. The format follows
 - `Install-WsusNode` and `Set-WsusNodeConfig` (local-only node install and configuration), replacing scripts 1 and 2.
 - `Set-WsusUpstreamConfig`: configures the upstream (sync source, products, classifications, schedule, groups, approval rules created off; `-ApplyRulesNow` applies only rules that are on). `-EnableRules` is replaced by `Enable-WsusApprovalRule`; a missing product title now throws.
 - `New-WsusAdminGroup`: creates the res.srv.wsus.admin resource group and nests the identity group into it (idempotent, `-WhatIf` aware).
-- `WSUS` PowerShell module for Windows PowerShell 5.1, with `Get-WsusNodeStatus`, which reports a node's role, last sync, content disk and newest maintenance and decline logs (disk and logs on the local node only).
+- `WSUS` PowerShell module for Windows PowerShell 5.1, with `Get-WsusNodeStatus`, which reports a node's role, last sync and its error, whether a sync is running (phase and progress), update, approved and declined counts, content disk and newest maintenance and decline logs (disk and logs on the local node only).
 - `Start-WsusSync`, which starts a full or `-CategoryOnly` (upstream-only) sync, joins one already running, and with `-Wait` polls with progress and a timeout.
 - `Disable-WsusApprovalRule`, `Enable-WsusApprovalRule` and `Deny-WsusUpdate -Kb` for turning approval rules off and on and declining updates by exact KB (upstream only).
 - `Invoke-WsusMaintenance` (weekly maintenance run on the local node: declines on an upstream, cleanup, WID reindex) and `Invoke-WsusDecline` (15-minute decline run on the upstream, remote-capable), both with transcripts and retention, replacing `-DeclineOnly`.

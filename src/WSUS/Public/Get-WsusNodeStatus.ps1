@@ -1,10 +1,11 @@
 function Get-WsusNodeStatus {
     <#
     .SYNOPSIS
-        Reports plain facts about one or more WSUS nodes: role, last sync, content disk and run logs.
+        Reports plain facts about one or more WSUS nodes: role, sync state, update counts, content disk and run logs.
     .DESCRIPTION
-        Read-only; works on an upstream and a replica. Role and last sync work remotely. Content disk
-        and maintenance/decline log facts can only be read on this machine, so for any other
+        Read-only; works on an upstream and a replica. Role, sync facts (last result and error, whether a sync
+        is running with its phase and progress) and the update, approved and declined counts work remotely.
+        Content disk and maintenance/decline log facts can only be read on this machine, so for any other
         -WsusServer those properties are $null.
 
         No verdict is returned (no 'Healthy' flag); filter the objects with Where-Object.
@@ -49,7 +50,9 @@ function Get-WsusNodeStatus {
             }
 
             $config = $wsus.GetConfiguration()
-            $lastSync = $wsus.GetSubscription().GetLastSynchronizationInfo()
+            $subscription = $wsus.GetSubscription()
+            $lastSync = $subscription.GetLastSynchronizationInfo()
+            $serverStatus = $wsus.GetStatus()
 
             $status = [ordered]@{
                 PSTypeName                 = 'WSUS.NodeStatus'
@@ -57,6 +60,14 @@ function Get-WsusNodeStatus {
                 Role                       = Get-WsusNodeRole -Wsus $wsus
                 LastSyncTime               = $null
                 LastSyncResult             = $null
+                LastSyncError              = $null
+                SyncStatus                 = [string] $subscription.GetSynchronizationStatus()
+                SyncPhase                  = $null
+                SyncProcessedItems         = $null
+                SyncTotalItems             = $null
+                UpdateCount                = $serverStatus.UpdateCount
+                ApprovedUpdateCount        = $serverStatus.ApprovedUpdateCount
+                DeclinedUpdateCount        = $serverStatus.DeclinedUpdateCount
                 ContentPath                = $null
                 ContentFreeGB              = $null
                 ContentTotalGB             = $null
@@ -70,6 +81,14 @@ function Get-WsusNodeStatus {
             if ($lastSync) {
                 $status.LastSyncTime = $lastSync.StartTime
                 $status.LastSyncResult = [string] $lastSync.Result
+                if ($status.LastSyncResult -eq 'Failed') { $status.LastSyncError = [string] $lastSync.Error }
+            }
+
+            if ($status.SyncStatus -eq 'Running') {
+                $progress = $subscription.GetSynchronizationProgress()
+                $status.SyncPhase = [string] $progress.Phase
+                $status.SyncProcessedItems = $progress.ProcessedItems
+                $status.SyncTotalItems = $progress.TotalItems
             }
 
             if ($server -in $localNames) {

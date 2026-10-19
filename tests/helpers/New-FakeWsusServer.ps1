@@ -97,7 +97,7 @@ function New-FakeWsusServer {
         if ($this.PollsLeft -gt 0) { $this.PollsLeft--; 'Running' } else { 'NotProcessing' }
     }
     $subscription | Add-Member -MemberType ScriptMethod -Name GetSynchronizationProgress -Value {
-        [PSCustomObject] @{ ProcessedItems = 5; TotalItems = 10 }
+        [PSCustomObject] @{ ProcessedItems = 5; TotalItems = 10; Phase = 'Updates' }
     }
 
     $newRule = {
@@ -200,5 +200,10 @@ function New-FakeWsusServer {
     $fake | Add-Member -MemberType ScriptMethod -Name GetSubscription -Value {
         $this.Calls.Add('GetSubscription'); $this.Subscription
     }
+    # IUpdateServer.GetStatus: server-wide counts. Tests set the numbers on $fake.Status.
+    $fake | Add-Member -NotePropertyName Status -NotePropertyValue ([PSCustomObject] @{
+        UpdateCount = 0; ApprovedUpdateCount = 0; DeclinedUpdateCount = 0
+    })
+    $fake | Add-Member -MemberType ScriptMethod -Name GetStatus -Value { $this.Calls.Add('GetStatus'); $this.Status }
     $fake
 }

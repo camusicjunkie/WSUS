@@ -84,6 +84,63 @@ Describe 'Get-WsusNodeStatus' {
         }
     }
 
+    Context 'sync state and update counts' {
+        It 'reports an idle node with no phase or progress' {
+            $result = Get-WsusNodeStatus
+
+            $result.SyncStatus | Should -Be 'NotProcessing'
+            $result.SyncPhase | Should -BeNullOrEmpty
+            $result.SyncProcessedItems | Should -BeNullOrEmpty
+            $result.SyncTotalItems | Should -BeNullOrEmpty
+        }
+
+        It 'reports the phase and progress of a sync that is running' {
+            $script:fake = New-FakeWsusServer -Name 'wsus01.contoso.local' -SyncRunning
+
+            $result = Get-WsusNodeStatus
+
+            $result.SyncStatus | Should -Be 'Running'
+            $result.SyncPhase | Should -Be 'Updates'
+            $result.SyncProcessedItems | Should -Be 5
+            $result.SyncTotalItems | Should -Be 10
+        }
+
+        It 'reports the error code when the last sync failed' {
+            $script:fake = New-FakeWsusServer -Name 'wsus01.contoso.local' -LastSyncResult 'Failed' -LastSyncError 'UssInternalError'
+
+            $result = Get-WsusNodeStatus
+
+            $result.LastSyncResult | Should -Be 'Failed'
+            $result.LastSyncError | Should -Be 'UssInternalError'
+        }
+
+        It 'leaves the error empty when the last sync succeeded' {
+            (Get-WsusNodeStatus).LastSyncError | Should -BeNullOrEmpty
+        }
+
+        It 'reports the update, approved and declined counts' {
+            $script:fake.Status.UpdateCount = 343
+            $script:fake.Status.ApprovedUpdateCount = 12
+            $script:fake.Status.DeclinedUpdateCount = 331
+
+            $result = Get-WsusNodeStatus
+
+            $result.UpdateCount | Should -Be 343
+            $result.ApprovedUpdateCount | Should -Be 12
+            $result.DeclinedUpdateCount | Should -Be 331
+        }
+
+        It 'reports the sync and count facts for a remote node too' {
+            $script:fake = New-FakeWsusServer -Name 'wsus02.contoso.local' -IsReplica $true -SyncRunning
+            $script:fake.Status.UpdateCount = 250
+
+            $result = Get-WsusNodeStatus -WsusServer 'wsus02.contoso.local'
+
+            $result.SyncStatus | Should -Be 'Running'
+            $result.UpdateCount | Should -Be 250
+        }
+    }
+
     Context 'replica role' {
         It 'reports Replica' {
             $script:fake.Config.IsReplicaServer = $true
