@@ -130,6 +130,24 @@ Describe 'Get-WsusNodeStatus' {
             $result.DeclinedUpdateCount | Should -Be 331
         }
 
+        It 'reports content still to download and failed downloads' {
+            $script:fake.Download.TotalBytesToDownload = 300MB
+            $script:fake.Download.DownloadedBytes = 100MB
+            $script:fake.Download.FailedCount = 2
+
+            $result = Get-WsusNodeStatus
+
+            $result.DownloadPendingMB | Should -Be 200
+            $result.DownloadFailedCount | Should -Be 2
+        }
+
+        It 'reports no pending download when content is complete' {
+            $script:fake.Download.TotalBytesToDownload = 300MB
+            $script:fake.Download.DownloadedBytes = 300MB
+
+            (Get-WsusNodeStatus).DownloadPendingMB | Should -Be 0
+        }
+
         It 'reports the sync and count facts for a remote node too' {
             $script:fake = New-FakeWsusServer -Name 'wsus02.contoso.local' -IsReplica $true -SyncRunning
             $script:fake.Status.UpdateCount = 250

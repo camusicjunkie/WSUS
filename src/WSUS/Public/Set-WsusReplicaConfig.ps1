@@ -9,10 +9,9 @@ function Set-WsusReplicaConfig {
 
         Refuses when -UpstreamFqdn is the node itself, and when the node is an Upstream with
         non-default state (custom computer groups, approval rules or approvals) unless -Force.
-        That state is not discarded: it stays in the node's database, and after a role swap
-        replication has been seen to leave approvals missing (#37). Build a replica on a clean node.
-        With -Force the node is demoted anyway, its approval rules are turned off first (so they do
-        not fire when it is next promoted) and a warning says to compare approval counts.
+        With -Force the node is demoted, and its approval rules are turned off first so they do not
+        fire when it is next promoted. Its groups and approvals are replaced by the Upstream's on sync.
+        An approved update reaches the replica only once the Upstream has downloaded its content (#37).
         Probes the upstream's ClientWebService/client.asmx (https on 8531, http otherwise) before saving and fails when it does not
         answer; -Force skips the probe. The probe is skipped under -WhatIf.
     .EXAMPLE
@@ -74,9 +73,8 @@ function Set-WsusReplicaConfig {
     }
 
     if ($ownState -and -not $Force) {
-        throw ("$WsusServer is an Upstream with its own state ($ownState). That state stays in its database, and replication " +
-            'may not replace it, so its approvals can stay out of step with the upstream. Build the replica on a clean node ' +
-            '(README section 12), or use -Force to demote this one anyway.')
+        throw ("$WsusServer is an Upstream with its own state ($ownState). As a replica it takes the upstream's groups " +
+            'and approvals instead, and its approval rules are turned off. Use -Force to continue.')
     }
 
     if (-not $Force) {
@@ -96,10 +94,6 @@ function Set-WsusReplicaConfig {
             Where-Object Changed | ForEach-Object Name)
 
     if ($PSCmdlet.ShouldProcess($WsusServer, "Make replica of ${UpstreamFqdn}:$UpstreamPort")) {
-        if ($ownState) {
-            Write-Warning ("$WsusServer keeps its own state ($ownState) as a replica. After the first sync, compare " +
-                "ApprovedUpdateCount in Get-WsusNodeStatus with ${UpstreamFqdn}'s; if it stays lower, rebuild this node as a clean replica.")
-        }
         Set-WsusSyncSource -Config $config -UpstreamFqdn $UpstreamFqdn -UpstreamPort $UpstreamPort
         $config.Save()
     }
@@ -122,6 +116,7 @@ function Set-WsusReplicaConfig {
         Schedule      = '{0} syncs/day from {1:00}:00 UTC' -f $SyncsPerDay, $FirstSyncUtcHour
         SyncStarted   = $syncStarted
         DisabledRules = $disabledRules
-        NextStep      = "Get-WsusNodeStatus here and on $UpstreamFqdn once the sync finishes (ApprovedUpdateCount must match); Register-WsusMaintenanceTask"
+        NextStep      = ("Get-WsusNodeStatus on $UpstreamFqdn (DownloadPendingMB 0) and here once the sync finishes " +
+            '(ApprovedUpdateCount matches); Register-WsusMaintenanceTask')
     }
 }

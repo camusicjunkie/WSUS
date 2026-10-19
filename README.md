@@ -324,10 +324,9 @@ Clients register with WSUS01 again on their next scan.
 | 5 | NetScaler | Swap the roles: bind `svc_wsus02_*` to `vs_wsus_8530`/`vs_wsus_8531` and `svc_wsus01_*` to the `_bk` vservers |
 | 6 | New VM | Build it as the replica: section 12, with `-UpstreamFqdn wsus02.corp.local` |
 
-To swap back later (WSUS01 upstream again), promote WSUS01 the same way, then rebuild WSUS02 as a
-replica on a clean node, as in section 12. Do not demote WSUS02 in place: a node that was an upstream
-keeps its own approvals, groups and rules in its database. After one round trip, replication left 7 of
-13 approvals missing on such a replica, and more syncs did not fix it (#37).
+To swap back later (WSUS01 upstream again), promote WSUS01 the same way, then on WSUS02 run
+`Set-WsusReplicaConfig -UpstreamFqdn wsus01.corp.local -Force -SyncNow`. `-Force` turns WSUS02's approval rules off
+(`DisabledRules`), and the sync replaces its groups and approvals with WSUS01's. Check the counts as in section 12, step 6.
 
 WSUS02's existing scheduled tasks start declining automatically once it's no longer a replica.
 Firewall: open the new replica → WSUS02 on 8530/8531, and WSUS02 → Microsoft through the proxy.
@@ -341,16 +340,17 @@ Firewall: open the new replica → WSUS02 on 8530/8531, and WSUS02 → Microsoft
 | 3 | Replica | `Set-WsusNodeConfig -SslCertThumbprint <thumb> -VipFqdn wsus.corp.local` |
 | 4 | Replica | `Set-WsusReplicaConfig -UpstreamFqdn <upstream fqdn> -SyncNow` |
 | 5 | Replica | `Register-WsusMaintenanceTask -MaintenanceTime 04:00` |
-| 6 | Both | Once the sync finishes, `Get-WsusNodeStatus` on each node: `UpdateCount`, `ApprovedUpdateCount` and `DeclinedUpdateCount` match |
+| 6 | Both | `Get-WsusNodeStatus` on each node: `UpdateCount`, `ApprovedUpdateCount` and `DeclinedUpdateCount` match |
 
 `Set-WsusReplicaConfig` probes the upstream first and refuses to point a node at itself, or to demote a
 configured upstream without `-Force`. The first sync copies every approval and downloads all approved content
 from the upstream.
 
-Build the replica on a clean node: a new VM, or one whose WSUS role and WID database were removed. A former
-upstream demoted with `-Force` keeps its own state. Its approval rules are turned off (`DisabledRules` in the
-output), but its approvals stay, and replication may not bring them into line with the upstream's (#37).
-If step 6 shows fewer approvals after another sync, rebuild the node.
+A replica only receives an approved update once the upstream has downloaded that update's content (#37). Right
+after the upstream syncs from Microsoft or approves updates, the replica's `ApprovedUpdateCount` can be lower, and
+syncing the replica again does not help until the download finishes. Wait for the upstream's `DownloadPendingMB` to
+reach 0 (and `DownloadFailedCount` to be 0), then `Start-WsusSync -Wait` on the replica, or let its next scheduled sync
+catch up.
 
 ## 13. Repair or reinstall WSUS on a node
 
@@ -383,7 +383,7 @@ IIS and WSUS.
 
 | Check | Command |
 |-------|---------|
-| Role, last sync and its error, whether a sync is running (phase and progress), update, approved and declined counts, content disk, newest maintenance and decline logs | `Get-WsusNodeStatus` (on the node) |
+| Role, last sync and its error, whether a sync is running (phase and progress), update, approved and declined counts, content still to download and failed downloads, content disk, newest maintenance and decline logs | `Get-WsusNodeStatus` (on the node) |
 | Several nodes | `'wsus01.corp.local','wsus02.corp.local' \| Get-WsusNodeStatus` (disk and logs are `$null` for a remote node) |
 | Little free content disk | `Get-WsusNodeStatus \| Where-Object ContentFreePercent -lt 15` |
 | A sync that failed or is still running | `Get-WsusNodeStatus \| Where-Object { $_.LastSyncResult -eq 'Failed' -or $_.SyncStatus -eq 'Running' }` |

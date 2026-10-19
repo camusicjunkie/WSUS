@@ -4,7 +4,10 @@ function Get-WsusNodeStatus {
         Reports plain facts about one or more WSUS nodes: role, sync state, update counts, content disk and run logs.
     .DESCRIPTION
         Read-only; works on an upstream and a replica. Role, sync facts (last result and error, whether a sync
-        is running with its phase and progress) and the update, approved and declined counts work remotely.
+        is running with its phase and progress), the update, approved and declined counts, and content still
+        to download (DownloadPendingMB, DownloadFailedCount) work remotely. A replica only receives an approved
+        update once its upstream has downloaded that update's content (#37), so check the upstream's
+        DownloadPendingMB is 0 before expecting the replica's ApprovedUpdateCount to match.
         Content disk and maintenance/decline log facts can only be read on this machine, so for any other
         -WsusServer those properties are $null.
 
@@ -53,6 +56,7 @@ function Get-WsusNodeStatus {
             $subscription = $wsus.GetSubscription()
             $lastSync = $subscription.GetLastSynchronizationInfo()
             $serverStatus = $wsus.GetStatus()
+            $download = $wsus.GetContentDownloadProgress()
 
             $status = [ordered]@{
                 PSTypeName                 = 'WSUS.NodeStatus'
@@ -68,6 +72,8 @@ function Get-WsusNodeStatus {
                 UpdateCount                = $serverStatus.UpdateCount
                 ApprovedUpdateCount        = $serverStatus.ApprovedUpdateCount
                 DeclinedUpdateCount        = $serverStatus.DeclinedUpdateCount
+                DownloadPendingMB          = [math]::Round(($download.TotalBytesToDownload - $download.DownloadedBytes) / 1MB, 1)
+                DownloadFailedCount        = $wsus.GetFailedToDownloadUpdatesCount()
                 ContentPath                = $null
                 ContentFreeGB              = $null
                 ContentTotalGB             = $null
