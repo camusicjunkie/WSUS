@@ -110,10 +110,14 @@ before syncing a downstream node from it (a sync against a node still servicing 
 
 - [ ] After the failover, reverse the roles: `ConvertTo-WsusUpstream -Force` on the old upstream, `Set-WsusUpstreamConfig`,
       `Enable-WsusApprovalRule`, `Start-WsusSync -Wait`, then `Set-WsusReplicaConfig -UpstreamFqdn <it> -Force -SyncNow`
-      on the other node. Every step succeeds, and update and declined counts match on both nodes.
-- [ ] Compare `Get-WsusNodeStatus` `ApprovedUpdateCount` on both. **Known open item:** after one round trip the
-      replica held 6 approvals against the upstream's 13 (the Server 2022 and several Defender updates), and
-      `-ApplyRulesNow`, extra syncs and a direct re-approval did not change it. Record the counts.
+      on the other node. Every step succeeds, a warning says to compare approval counts, `DisabledRules` lists the
+      demoted node's rules and they are off. Update and declined counts match on both nodes.
+- [ ] Compare `Get-WsusNodeStatus` `ApprovedUpdateCount` on both and record the counts. Before #37, the demoted
+      node held 6 approvals against the upstream's 13 (the Server 2022 and several Defender updates), and
+      `-ApplyRulesNow`, extra syncs and a direct re-approval did not change it. If they still differ, list the
+      missing approvals with their group IDs on each node and add them to #37.
+- [ ] Remove the WSUS role and WID database on the demoted node, rebuild it as a clean replica (README section 12),
+      and check that `ApprovedUpdateCount` now matches the upstream's.
 
 ## Checking on a node
 

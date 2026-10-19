@@ -9,6 +9,10 @@ function Set-WsusReplicaConfig {
 
         Refuses when -UpstreamFqdn is the node itself, and when the node is an Upstream with
         non-default state (custom computer groups, approval rules or approvals) unless -Force.
+        That state is not discarded: it stays in the node's database, and after a role swap
+        replication has been seen to leave approvals missing (#37). Build a replica on a clean node.
+        With -Force the node is demoted anyway, its approval rules are turned off first (so they do
+        not fire when it is next promoted) and a warning says to compare approval counts.
         Probes the upstream's ClientWebService/client.asmx (https on 8531, http otherwise) before saving and fails when it does not
         answer; -Force skips the probe. The probe is skipped under -WhatIf.
     .EXAMPLE
@@ -57,18 +61,25 @@ function Set-WsusReplicaConfig {
         throw "-UpstreamFqdn '$UpstreamFqdn' is the node itself. A node cannot be its own upstream."
     }
 
-    if (-not $Force) {
-        if ((Get-WsusNodeRole -Wsus $wsus) -eq 'Upstream') {
-            $builtInGroups = 'All Computers', 'Unassigned Computers'
-            $customGroups = @($wsus.GetComputerTargetGroups() | Where-Object { $_.Name -notin $builtInGroups })
-            $customRules = @($wsus.GetInstallApprovalRules() | Where-Object { $_.Name -ne 'Default Automatic Approval Rule' })
-            $approvals = @($wsus.GetUpdateApprovals((New-Object -TypeName Microsoft.UpdateServices.Administration.UpdateScope)))
-            if ($customGroups.Count -or $customRules.Count -or $approvals.Count) {
-                throw ("$WsusServer is an Upstream with its own state ($($customGroups.Count) custom computer group(s), " +
-                    "$($customRules.Count) approval rule(s), $($approvals.Count) approval(s)). Making it a replica discards that. Use -Force to continue.")
-            }
+    $customRules = @()
+    $ownState = $null
+    if ((Get-WsusNodeRole -Wsus $wsus) -eq 'Upstream') {
+        $builtInGroups = 'All Computers', 'Unassigned Computers'
+        $customGroups = @($wsus.GetComputerTargetGroups() | Where-Object { $_.Name -notin $builtInGroups })
+        $customRules = @($wsus.GetInstallApprovalRules() | Where-Object { $_.Name -ne 'Default Automatic Approval Rule' })
+        $approvals = @($wsus.GetUpdateApprovals((New-Object -TypeName Microsoft.UpdateServices.Administration.UpdateScope)))
+        if ($customGroups.Count -or $customRules.Count -or $approvals.Count) {
+            $ownState = "$($customGroups.Count) custom computer group(s), $($customRules.Count) approval rule(s), $($approvals.Count) approval(s)"
         }
+    }
 
+    if ($ownState -and -not $Force) {
+        throw ("$WsusServer is an Upstream with its own state ($ownState). That state stays in its database, and replication " +
+            'may not replace it, so its approvals can stay out of step with the upstream. Build the replica on a clean node ' +
+            '(README section 12), or use -Force to demote this one anyway.')
+    }
+
+    if (-not $Force) {
         $probeUri = (Get-WsusEndpoint -Fqdn $UpstreamFqdn -Port $UpstreamPort).ClientServiceUri
         if ($WhatIfPreference) {
             Write-Information -MessageData "What if: would probe $probeUri" -InformationAction Continue
@@ -80,7 +91,15 @@ function Set-WsusReplicaConfig {
 
     $subscription = $wsus.GetSubscription()
 
+    # Rules left on would fire again the moment the node is promoted; turn them off while it is still an Upstream.
+    $disabledRules = @(Set-WsusApprovalRuleState -Rule $customRules -Name '*' -Enabled $false -Server $WsusServer |
+            Where-Object Changed | ForEach-Object Name)
+
     if ($PSCmdlet.ShouldProcess($WsusServer, "Make replica of ${UpstreamFqdn}:$UpstreamPort")) {
+        if ($ownState) {
+            Write-Warning ("$WsusServer keeps its own state ($ownState) as a replica. After the first sync, compare " +
+                "ApprovedUpdateCount in Get-WsusNodeStatus with ${UpstreamFqdn}'s; if it stays lower, rebuild this node as a clean replica.")
+        }
         Set-WsusSyncSource -Config $config -UpstreamFqdn $UpstreamFqdn -UpstreamPort $UpstreamPort
         $config.Save()
     }
@@ -97,11 +116,12 @@ function Set-WsusReplicaConfig {
     }
 
     [PSCustomObject]@{
-        PSTypeName  = 'WSUS.ReplicaConfig'
-        Server      = $WsusServer
-        Upstream    = '{0}:{1}' -f $UpstreamFqdn, $UpstreamPort
-        Schedule    = '{0} syncs/day from {1:00}:00 UTC' -f $SyncsPerDay, $FirstSyncUtcHour
-        SyncStarted = $syncStarted
-        NextStep    = 'Get-WsusNodeStatus to check the sync; Register-WsusMaintenanceTask'
+        PSTypeName    = 'WSUS.ReplicaConfig'
+        Server        = $WsusServer
+        Upstream      = '{0}:{1}' -f $UpstreamFqdn, $UpstreamPort
+        Schedule      = '{0} syncs/day from {1:00}:00 UTC' -f $SyncsPerDay, $FirstSyncUtcHour
+        SyncStarted   = $syncStarted
+        DisabledRules = $disabledRules
+        NextStep      = "Get-WsusNodeStatus here and on $UpstreamFqdn once the sync finishes (ApprovedUpdateCount must match); Register-WsusMaintenanceTask"
     }
 }

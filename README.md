@@ -324,6 +324,11 @@ Clients register with WSUS01 again on their next scan.
 | 5 | NetScaler | Swap the roles: bind `svc_wsus02_*` to `vs_wsus_8530`/`vs_wsus_8531` and `svc_wsus01_*` to the `_bk` vservers |
 | 6 | New VM | Build it as the replica: section 12, with `-UpstreamFqdn wsus02.corp.local` |
 
+To swap back later (WSUS01 upstream again), promote WSUS01 the same way, then rebuild WSUS02 as a
+replica on a clean node, as in section 12. Do not demote WSUS02 in place: a node that was an upstream
+keeps its own approvals, groups and rules in its database. After one round trip, replication left 7 of
+13 approvals missing on such a replica, and more syncs did not fix it (#37).
+
 WSUS02's existing scheduled tasks start declining automatically once it's no longer a replica.
 Firewall: open the new replica → WSUS02 on 8530/8531, and WSUS02 → Microsoft through the proxy.
 
@@ -336,10 +341,16 @@ Firewall: open the new replica → WSUS02 on 8530/8531, and WSUS02 → Microsoft
 | 3 | Replica | `Set-WsusNodeConfig -SslCertThumbprint <thumb> -VipFqdn wsus.corp.local` |
 | 4 | Replica | `Set-WsusReplicaConfig -UpstreamFqdn <upstream fqdn> -SyncNow` |
 | 5 | Replica | `Register-WsusMaintenanceTask -MaintenanceTime 04:00` |
+| 6 | Both | Once the sync finishes, `Get-WsusNodeStatus` on each node: `UpdateCount`, `ApprovedUpdateCount` and `DeclinedUpdateCount` match |
 
 `Set-WsusReplicaConfig` probes the upstream first and refuses to point a node at itself, or to demote a
 configured upstream without `-Force`. The first sync copies every approval and downloads all approved content
 from the upstream.
+
+Build the replica on a clean node: a new VM, or one whose WSUS role and WID database were removed. A former
+upstream demoted with `-Force` keeps its own state. Its approval rules are turned off (`DisabledRules` in the
+output), but its approvals stay, and replication may not bring them into line with the upstream's (#37).
+If step 6 shows fewer approvals after another sync, rebuild the node.
 
 ## 13. Repair or reinstall WSUS on a node
 
