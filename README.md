@@ -372,9 +372,10 @@ IIS and WSUS.
 
 | Check | Command |
 |-------|---------|
-| Role, last sync, content disk, newest maintenance and decline logs | `Get-WsusNodeStatus` (on the node) |
+| Role, last sync and its error, whether a sync is running (phase and progress), update, approved and declined counts, content disk, newest maintenance and decline logs | `Get-WsusNodeStatus` (on the node) |
 | Several nodes | `'wsus01.corp.local','wsus02.corp.local' \| Get-WsusNodeStatus` (disk and logs are `$null` for a remote node) |
 | Little free content disk | `Get-WsusNodeStatus \| Where-Object ContentFreePercent -lt 15` |
+| A sync that failed or is still running | `Get-WsusNodeStatus \| Where-Object { $_.LastSyncResult -eq 'Failed' -or $_.SyncStatus -eq 'Running' }` |
 | Scheduled tasks | `Get-ScheduledTask -TaskName 'WSUS*' \| Get-ScheduledTaskInfo` |
 | Maintenance results | Newest `C:\ProgramData\WsusMaintenance\maint_*.log` and `decline_*.log` |
 | NetScaler state | `show lb vserver vs_wsus_8531` (primary UP, backup not in use) |
