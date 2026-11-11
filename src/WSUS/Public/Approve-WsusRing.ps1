@@ -9,7 +9,8 @@ function Approve-WsusRing {
           - the earliest -From approval is at least -MinimumSoakDays old
           - at least one -From computer needed the update (so it was actually tested)
           - at least -MinimumInstalledPercent of the -From computers that need it have it installed
-            (installed and installed-pending-reboot both count; the percent is floored)
+            (installed and installed-pending-reboot both count; -From computers that have not reported
+            on the update count as not installed; the percent is floored)
           - no -From computer failed to install it
         Updates that pass are approved for install, with no deadline, for each -To group that does not
         have an approval yet. Updates that fail are held. -Force approves held updates anyway and the
@@ -111,7 +112,10 @@ function Approve-WsusRing {
         $summary = $update.GetSummaryForComputerTargetGroup($fromGroup)
         $installed = $summary.InstalledCount + $summary.InstalledPendingRebootCount
         $needed = $installed + $summary.NotInstalledCount + $summary.DownloadedCount + $summary.FailedCount
-        $percent = if ($needed -gt 0) { [int] [math]::Floor(100 * $installed / $needed) } else { 0 }
+        # Computers that have not reported yet might need it, so they count against the percent.
+        $unknown = [int] $summary.UnknownCount
+        $reporting = $needed + $unknown
+        $percent = if ($reporting -gt 0) { [int] [math]::Floor(100 * $installed / $reporting) } else { 0 }
 
         $approvedOn = ($update.GetUpdateApprovals($fromGroup) | Sort-Object -Property CreationDate |
             Select-Object -First 1).CreationDate
@@ -120,11 +124,16 @@ function Approve-WsusRing {
         if ($approvedOn -gt $soakCutoff) {
             $reasons.Add(('approved for {0} on {1:yyyy-MM-dd}, soak not finished' -f $From, $approvedOn))
         }
-        if ($needed -eq 0) {
+        if ($needed -eq 0 -and $unknown -gt 0) {
+            $reasons.Add("no $From computer has reported on it yet ($unknown not reported)")
+        }
+        elseif ($needed -eq 0) {
             $reasons.Add("no $From computer needed it, so it was never tested")
         }
         elseif ($percent -lt $MinimumInstalledPercent) {
-            $reasons.Add("only $percent% installed in $From")
+            $reason = "only $percent% installed in $From"
+            if ($unknown -gt 0) { $reason += " ($unknown not reported)" }
+            $reasons.Add($reason)
         }
         if ($summary.FailedCount -gt 0) {
             $reasons.Add("$($summary.FailedCount) failed in $From")
@@ -150,6 +159,7 @@ function Approve-WsusRing {
             Kb         = @($update.KnowledgebaseArticles) -join ', '
             Installed  = $installed
             Needed     = $needed
+            Unknown    = $unknown
             Percent    = $percent
             Failed     = [int] $summary.FailedCount
             Gate       = $gate

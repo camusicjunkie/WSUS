@@ -53,8 +53,12 @@ function Invoke-WsusDecline {
     if ($role -eq 'Upstream') {
         $log = Start-WsusLog -Kind Decline -Path $LogPath -Keep $KeepLogs
         try {
-            $declined = @(Invoke-WsusDeclinePass -Wsus $wsus -Pattern $DeclinePattern `
-                    -ArrivedSince ([datetime]::UtcNow.AddDays(-$RecentDays)))
+            $declineParams = @{
+                Wsus         = $wsus
+                Pattern      = $DeclinePattern
+                ArrivedSince = [datetime]::UtcNow.AddDays(-$RecentDays)
+            }
+            $declined = @(Invoke-WsusDeclinePass @declineParams)
         }
         finally {
             Stop-WsusLog -Log $log
