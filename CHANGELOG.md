@@ -6,6 +6,11 @@ All notable changes to the WSUS module are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- README section 7: added `AU\UseUpdateClassPolicySource` (needed when the per-class scan source is set) to the common GPO settings, a "Clients without a GPO" table of the registry values a Packer or scripted client needs, a client check, and image-sealing steps for the WSUS client identity. `DisableDualScan` is no longer listed (not supported on Windows 11).
+- README: the NetScaler design note now says why the VIP stays active/passive and that both 8530 and 8531 must pass.
+
 ## [1.0.0] - 2026-10-19
 
 ### Added
