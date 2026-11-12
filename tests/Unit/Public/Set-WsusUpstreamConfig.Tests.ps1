@@ -149,7 +149,7 @@ Describe 'Set-WsusUpstreamConfig' {
 
         It 'creates only the groups that are missing, so a re-run creates none' {
             $script:fake = New-FakeWsusServer -Categories $script:allProducts -ComputerGroups 'All Computers', 'Pilot'
-            Set-WsusUpstreamConfig -ComputerGroup 'Pilot', 'Servers' | Out-Null
+            Set-WsusUpstreamConfig -ComputerGroup 'Pilot', 'Servers' -CritSecGroup 'Pilot' -DefinitionGroup 'Servers' | Out-Null
 
             $script:fake.Calls | Should -Contain 'CreateGroup:Servers'
             $script:fake.Calls | Should -Not -Contain 'CreateGroup:Pilot'
