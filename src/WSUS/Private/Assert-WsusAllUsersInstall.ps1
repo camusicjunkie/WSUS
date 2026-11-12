@@ -20,7 +20,8 @@ function Assert-WsusAllUsersInstall {
 
     $base = [System.IO.Path]::GetFullPath($ModuleBase)
     foreach ($root in $roots) {
-        if ($base.StartsWith($root.TrimEnd('\') + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
+        $prefix = [WildcardPattern]::Escape(($root -replace '\\$', '') + '\')
+        if ($base -like "$prefix*") {
             return
         }
     }

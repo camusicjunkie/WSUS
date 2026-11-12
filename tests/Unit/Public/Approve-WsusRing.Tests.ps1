@@ -77,6 +77,26 @@ Describe 'Approve-WsusRing' {
             $rows[1].Percent | Should -Be 66
         }
 
+        It 'counts -From computers that have not reported against the percent' {
+            New-FakeWsusUpdate -Server $script:fake -Installed 9 -Unknown 3 | Out-Null
+
+            $row = Approve-WsusRing -WarningAction SilentlyContinue
+
+            $row.Unknown | Should -Be 3
+            $row.Percent | Should -Be 75
+            $row.Gate | Should -Be 'Held'
+            $row.Reason -join ';' | Should -Match '3 not reported'
+        }
+
+        It 'holds it when no -From computer has reported on it yet' {
+            New-FakeWsusUpdate -Server $script:fake -Installed 0 -Unknown 4 | Out-Null
+
+            $row = Approve-WsusRing -WarningAction SilentlyContinue
+
+            $row.Gate | Should -Be 'Held'
+            $row.Reason -join ';' | Should -Match 'not reported'
+        }
+
         It 'counts installed-pending-reboot as installed' {
             New-FakeWsusUpdate -Server $script:fake -Installed 5 -InstalledPendingReboot 4 -NotInstalled 1 | Out-Null
 

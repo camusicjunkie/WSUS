@@ -164,6 +164,13 @@ Describe 'Set-WsusNodeConfig' {
             Should -Invoke -ModuleName WSUS Restart-WsusService -Times 0
         }
 
+        It 'throws when the domain is this machine, before changing anything' {
+            { Set-WsusNodeConfig -SslCertThumbprint $script:thumb -VipFqdn 'wsus.contoso.local' -Domain $env:COMPUTERNAME } |
+                Should -Throw '*Pass -Domain*'
+            Should -Invoke -ModuleName WSUS Add-LocalGroupMember -Times 0
+            Should -Invoke -ModuleName WSUS Restart-WsusService -Times 0
+        }
+
         It 'returns nothing and changes nothing under -WhatIf' {
             $result = Set-WsusNodeConfig -SslCertThumbprint $script:thumb -VipFqdn 'wsus.contoso.local' -Domain 'CONTOSO' -WhatIf
 

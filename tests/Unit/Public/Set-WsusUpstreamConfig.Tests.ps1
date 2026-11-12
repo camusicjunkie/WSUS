@@ -68,6 +68,11 @@ Describe 'Set-WsusUpstreamConfig' {
     }
 
     Context 'products, classifications and schedule' {
+        It 'throws on a classification the server does not have, before saving the subscription' {
+            { Set-WsusUpstreamConfig -Classification 'Security Updates', 'Critcal Updates' } | Should -Throw '*Classification not found*Critcal Updates*'
+            $script:fake.Calls | Should -Not -Contain 'Subscription.Save'
+        }
+
         It 'subscribes to the default products and classifications and saves the schedule' {
             $result = Set-WsusUpstreamConfig
 
@@ -144,7 +149,7 @@ Describe 'Set-WsusUpstreamConfig' {
 
         It 'creates only the groups that are missing, so a re-run creates none' {
             $script:fake = New-FakeWsusServer -Categories $script:allProducts -ComputerGroups 'All Computers', 'Pilot'
-            Set-WsusUpstreamConfig -ComputerGroup 'Pilot', 'Servers' | Out-Null
+            Set-WsusUpstreamConfig -ComputerGroup 'Pilot', 'Servers' -CritSecGroup 'Pilot' -DefinitionGroup 'Servers' | Out-Null
 
             $script:fake.Calls | Should -Contain 'CreateGroup:Servers'
             $script:fake.Calls | Should -Not -Contain 'CreateGroup:Pilot'
@@ -169,6 +174,11 @@ Describe 'Set-WsusUpstreamConfig' {
             $definition.Classifications | Should -Be @('Definition Updates')
             $definition.Groups | Should -Be @('Packer', 'Pilot', 'Workstations', 'VDI')
             $result.Rules | Should -Be 'Auto - Critical and Security (Off); Auto - Definition Updates (Off)'
+        }
+
+        It 'throws on a rule group that does not exist and creates no rule' {
+            { Set-WsusUpstreamConfig -CritSecGroup 'Nonexistent' } | Should -Throw '*Computer group not found*Nonexistent*'
+            @($script:fake.GetInstallApprovalRules()) | Should -BeNullOrEmpty
         }
 
         It 'honours -CritSecGroup and -DefinitionGroup' {

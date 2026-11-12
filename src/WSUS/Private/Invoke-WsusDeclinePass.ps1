@@ -16,7 +16,7 @@ function Invoke-WsusDeclinePass {
         [Parameter(Mandatory)]
         $Wsus,
 
-        # Wildcard pattern matched against update titles; matching updates are declined.
+        # Regular expression matched against update titles; matching updates are declined.
         [Parameter(Mandatory)]
         [string] $Pattern,
 

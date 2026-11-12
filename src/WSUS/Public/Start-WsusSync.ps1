@@ -47,6 +47,8 @@ function Start-WsusSync {
     $subscription = $wsus.GetSubscription()
     $started = Get-Date
     $status = 'Started'
+    # Start time of the last finished sync, to tell the sync started here from the one before it.
+    $previousStart = $subscription.GetLastSynchronizationInfo().StartTime
 
     if ($subscription.GetSynchronizationStatus() -ne 'NotProcessing') {
         Write-Warning "A sync is already running on '$WsusServer'; not starting another."
@@ -71,14 +73,33 @@ function Start-WsusSync {
     if ($Wait) {
         $maxPolls = $TimeoutMinutes * 4
         $polls = 0
-        while ($subscription.GetSynchronizationStatus() -ne 'NotProcessing') {
-            if (++$polls -gt $maxPolls) {
-                throw "$mode sync on '$WsusServer' did not finish within $TimeoutMinutes minutes. The sync keeps running on the server; check it with Get-WsusNodeStatus."
+        # StartSynchronization returns before the server reports the sync as running, so a status of
+        # NotProcessing straight after the start is not a finished sync. Wait up to a minute to see it begin.
+        $maxStartChecks = 12
+        $startChecks = 0
+        $seenRunning = $false
+        while ($true) {
+            if ($subscription.GetSynchronizationStatus() -ne 'NotProcessing') {
+                $seenRunning = $true
+                if (++$polls -gt $maxPolls) {
+                    throw "$mode sync on '$WsusServer' did not finish within $TimeoutMinutes minutes. The sync keeps running on the server; check it with Get-WsusNodeStatus."
+                }
+                $progress = $subscription.GetSynchronizationProgress()
+                $percent = if ($progress.TotalItems -gt 0) { [int] [math]::Min(100, $progress.ProcessedItems / $progress.TotalItems * 100) } else { 0 }
+                Write-Progress -Activity "WSUS $mode sync on $WsusServer" -Status "$($progress.ProcessedItems) of $($progress.TotalItems) items" -PercentComplete $percent
+                Start-Sleep -Seconds 15
+                continue
             }
-            $progress = $subscription.GetSynchronizationProgress()
-            $percent = if ($progress.TotalItems -gt 0) { [int] [math]::Min(100, $progress.ProcessedItems / $progress.TotalItems * 100) } else { 0 }
-            Write-Progress -Activity "WSUS $mode sync on $WsusServer" -Status "$($progress.ProcessedItems) of $($progress.TotalItems) items" -PercentComplete $percent
-            Start-Sleep -Seconds 15
+
+            if ($seenRunning) { break }
+
+            # Not seen running yet: it may already have finished, which shows as a newer last-sync start time.
+            $lastStart = $subscription.GetLastSynchronizationInfo().StartTime
+            if ($lastStart -and $lastStart -ne $previousStart) { break }
+            if (++$startChecks -gt $maxStartChecks) {
+                throw "$mode sync on '$WsusServer' did not start within a minute, so its result cannot be reported. Check it with Get-WsusNodeStatus."
+            }
+            Start-Sleep -Seconds 5
         }
         Write-Progress -Activity "WSUS $mode sync on $WsusServer" -Completed
 

@@ -21,6 +21,7 @@ function New-FakeWsusUpdate {
         [int] $NotInstalled = 0,
         [int] $Downloaded = 0,
         [int] $Failed = 0,
+        [int] $Unknown = 0,
         [bool] $IsDeclined = $false,
         [bool] $IsSuperseded = $false,
         [bool] $RequiresLicense = $false
@@ -46,6 +47,7 @@ function New-FakeWsusUpdate {
             NotInstalledCount           = $NotInstalled
             DownloadedCount             = $Downloaded
             FailedCount                 = $Failed
+            UnknownCount                = $Unknown
         }
     }
     $update | Add-Member -MemberType ScriptMethod -Name GetUpdateApprovals -Value {

@@ -16,8 +16,8 @@ function Invoke-WsusDatabaseQuery {
         [string] $Query
     )
 
-    $connection = New-Object -TypeName System.Data.SqlClient.SqlConnection `
-        -ArgumentList "Server=$Instance;Database=SUSDB;Integrated Security=SSPI;"
+    $connectionString = "Server=$Instance;Database=SUSDB;Integrated Security=SSPI;"
+    $connection = New-Object -TypeName System.Data.SqlClient.SqlConnection -ArgumentList $connectionString
     try {
         $connection.Open()
         $command = $connection.CreateCommand()
