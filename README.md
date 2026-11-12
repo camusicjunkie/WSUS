@@ -237,7 +237,7 @@ values are under `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`, `...\
 | `SetPolicyDrivenUpdateSourceForQualityUpdates`, `...FeatureUpdates`, `...DriverUpdates`, `...OtherUpdates` | 1 |
 | `ExcludeWUDriversInQualityUpdate` | 1 |
 | `AU\UseWUServer` | 1 |
-| `AU\UseUpdateClassPolicySource` | 1 (makes the `SetPolicyDrivenUpdateSourceFor...` values above take effect) |
+| `AU\UseUpdateClassPolicySource` | 1 (needed for the `SetPolicyDrivenUpdateSourceFor...` values above to take effect) |
 
 **Per ring**
 
@@ -285,10 +285,12 @@ machine in or out of Pilot is a group membership change; it applies after a rebo
 ring installs; the schedule decides WHEN. Packer builds are not covered by a GPO: the Ansible `configure_update`
 role registers them with `TargetGroup = Packer` (see "Clients without a GPO" below).
 
-**Scan source.** Windows 11 and Server 2025 take each class of update from the source the scan source policy
-names, and ignore WSUS for a class that policy does not point at WSUS. The GPO writes
-`AU\UseUpdateClassPolicySource` for you when you enable "Specify source service for specific classes of Windows
-Updates"; a client configured by registry must write it too, or the scan source is not altered. Do not set Windows
+**Scan source.** With only the WSUS server policy set, Windows 11 and Server 2025 take all updates from WSUS.
+Once you set the per-class scan source (`SetPolicyDrivenUpdateSourceFor...`, 1 = WSUS, 0 = Windows Update), each
+class follows it. The GPO writes `AU\UseUpdateClassPolicySource` for you when you enable "Specify source service
+for specific classes of Windows Updates"; a client configured by registry must write it too, or the per-class
+values are not applied. Setting all four classes to WSUS explicitly is recommended, so the source is not left to
+defaults. Do not set Windows
 Update for Business deferral or pause policies (`DeferQualityUpdates`, `PauseQualityUpdates`,
 `BranchReadinessLevel`, and similar) on WSUS clients: they send scans to Windows Update. The older "Do not allow
 update deferral policies to cause scans against Windows Update" (`DisableDualScan`) is not supported on Windows 11
@@ -297,7 +299,7 @@ and is not needed once the scan source is set, so it is not in the table above.
 ### Clients without a GPO (Packer builds and other machines configured by registry)
 
 A machine that gets its settings from a script or Ansible role has no GPO to write the values, so it needs all
-of these. Missing `UseUpdateClassPolicySource` is the easiest one to overlook.
+of these. `UseUpdateClassPolicySource` is easy to overlook, and it must sit under `AU`, not one level up.
 
 | Key | Value | Data |
 |-----|-------|------|
