@@ -32,12 +32,16 @@ Describe 'Set-WsusSyncSchedule' {
         $script:fake.Calls | Should -Not -Contain 'Subscription.Save'
     }
 
-    It 'rejects an hour outside 0-23 and a count outside 1-24' {
-        InModuleScope WSUS -Parameters @{ Sub = $script:subscription } {
-            param ($Sub)
-            { Set-WsusSyncSchedule -Subscription $Sub -SyncsPerDay 1 -FirstSyncUtcHour 24 } | Should -Throw
-            { Set-WsusSyncSchedule -Subscription $Sub -SyncsPerDay 0 -FirstSyncUtcHour 0 } | Should -Throw
-            { Set-WsusSyncSchedule -Subscription $Sub -SyncsPerDay 25 -FirstSyncUtcHour 0 } | Should -Throw
-        }
+    It 'rejects <Name>' -ForEach @(
+        @{ Name = 'an hour above 23'; Syncs = 1; Hour = 24 }
+        @{ Name = 'zero syncs per day'; Syncs = 0; Hour = 0 }
+        @{ Name = 'more than 24 syncs per day'; Syncs = 25; Hour = 0 }
+    ) {
+        {
+            InModuleScope WSUS -Parameters @{ Sub = $script:subscription; Syncs = $Syncs; Hour = $Hour } {
+                param ($Sub, $Syncs, $Hour)
+                Set-WsusSyncSchedule -Subscription $Sub -SyncsPerDay $Syncs -FirstSyncUtcHour $Hour
+            }
+        } | Should -Throw
     }
 }
