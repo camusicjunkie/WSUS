@@ -7,6 +7,11 @@ Two Server Core WSUS nodes behind the NetScaler VIP `wsus.corp.local`:
 
 Each node has its own Windows Internal Database (WID) and its own content disk. Nothing is shared.
 
+The NetScaler runs the VIP active/passive: WSUS01 takes all client traffic and WSUS02 only when WSUS01 is down.
+Keep it that way (or use persistence). The nodes have separate databases, so a client that moves between them
+registers again and does one full scan. Both 8530 and 8531 must pass through the VIP: content stays on HTTP
+8530 by design and clients use both ports.
+
 Rings (computer groups): `Packer`, `Pilot`, `Workstations`, `Servers`, `VDI`. The names are a
 contract: `Set-WsusUpstreamConfig` creates these groups and the client GPOs (section 7) must use exactly
 these `TargetGroup` values. The module defines the rings, the promotion path and the two approval rules in one
@@ -229,10 +234,10 @@ values are under `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`, `...\
 | `TargetGroupEnabled` | 1 |
 | `TargetGroup` (string) | The ring name from the table below |
 | `DoNotConnectToWindowsUpdateInternetLocations` | 1 |
-| `DisableDualScan` | 1 |
 | `SetPolicyDrivenUpdateSourceForQualityUpdates`, `...FeatureUpdates`, `...DriverUpdates`, `...OtherUpdates` | 1 |
 | `ExcludeWUDriversInQualityUpdate` | 1 |
 | `AU\UseWUServer` | 1 |
+| `AU\UseUpdateClassPolicySource` | 1 (needed for the `SetPolicyDrivenUpdateSourceFor...` values above to take effect) |
 
 **Per ring**
 
@@ -278,7 +283,47 @@ OU, this GPO outranks the Workstations GPO even if that OU sits under a workstat
 order 1 and is security-filtered, so its values win only for computers in `res.ent.wsus.pilot`. Moving a
 machine in or out of Pilot is a group membership change; it applies after a reboot. Approvals decide WHAT a
 ring installs; the schedule decides WHEN. Packer builds are not covered by a GPO: the Ansible `configure_update`
-role registers them with `TargetGroup = Packer`.
+role registers them with `TargetGroup = Packer` (see "Clients without a GPO" below).
+
+**Scan source.** With only the WSUS server policy set, Windows 11 and Server 2025 take all updates from WSUS.
+Once you set the per-class scan source (`SetPolicyDrivenUpdateSourceFor...`, 1 = WSUS, 0 = Windows Update), each
+class follows it. The GPO writes `AU\UseUpdateClassPolicySource` for you when you enable "Specify source service
+for specific classes of Windows Updates"; a client configured by registry must write it too, or the per-class
+values are not applied. Setting all four classes to WSUS explicitly is recommended, so the source is not left to
+defaults. Do not set Windows
+Update for Business deferral or pause policies (`DeferQualityUpdates`, `PauseQualityUpdates`,
+`BranchReadinessLevel`, and similar) on WSUS clients: they send scans to Windows Update. The older "Do not allow
+update deferral policies to cause scans against Windows Update" (`DisableDualScan`) is not supported on Windows 11
+and is not needed once the scan source is set, so it is not in the table above.
+
+### Clients without a GPO (Packer builds and other machines configured by registry)
+
+A machine that gets its settings from a script or Ansible role has no GPO to write the values, so it needs all
+of these. `UseUpdateClassPolicySource` is easy to overlook, and it must sit under `AU`, not one level up.
+
+| Key | Value | Data |
+|-----|-------|------|
+| `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate` | `WUServer`, `WUStatusServer` (string) | `https://wsus.corp.local:8531` |
+| same | `TargetGroupEnabled` | 1 |
+| same | `TargetGroup` (string) | `Packer` |
+| same | `SetPolicyDrivenUpdateSourceForQualityUpdates`, `...FeatureUpdates`, `...DriverUpdates`, `...OtherUpdates` | 1 |
+| same | `DoNotConnectToWindowsUpdateInternetLocations` | 1 |
+| `...\WindowsUpdate\AU` | `UseWUServer` | 1 |
+| `...\WindowsUpdate\AU` | `UseUpdateClassPolicySource` | 1 |
+
+Check on the client:
+
+```powershell
+# WSUS must be the default service
+(New-Object -ComObject Microsoft.Update.ServiceManager).Services | Select-Object Name, IsDefaultAUService
+# No deferral or pause values should be present
+reg query HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate /s
+```
+
+**Before an image is sealed or cloned**, delete the client identity so every machine made from it registers as
+itself. Cloned machines that share a `SusClientId` show up in WSUS as one computer, with whichever clone reported
+last. Under `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate` remove `SusClientId`,
+`SusClientIDValidation`, `PingID` and `AccountDomainSid`.
 
 ## 8. Pilot finds a bad update
 
