@@ -45,8 +45,13 @@ function Deny-WsusUpdate {
             $hits = @($wsus.SearchUpdates($number) | Where-Object { $number -in $_.KnowledgebaseArticles })
 
             if ($hits.Count -eq 0) {
-                Write-Error -Message "No update found for KB$number on $WsusServer." -Category ObjectNotFound `
-                    -TargetObject "KB$number" -ErrorId 'WsusUpdateNotFound'
+                $errorParams = @{
+                    Message      = "No update found for KB$number on $WsusServer."
+                    Category     = 'ObjectNotFound'
+                    TargetObject = "KB$number"
+                    ErrorId      = 'WsusUpdateNotFound'
+                }
+                Write-Error @errorParams
                 continue
             }
 

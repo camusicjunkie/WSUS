@@ -85,8 +85,12 @@ EXEC sp_updatestats;
         $database = 'Skipped'
 
         if ($role -eq 'Upstream') {
-            $declined = @(Invoke-WsusDeclinePass -Wsus $wsus -Pattern $DeclinePattern `
-                    -SupersededOlderThan ([datetime]::UtcNow.AddDays(-$SupersededAgeDays)))
+            $declineParams = @{
+                Wsus                = $wsus
+                Pattern             = $DeclinePattern
+                SupersededOlderThan = [datetime]::UtcNow.AddDays(-$SupersededAgeDays)
+            }
+            $declined = @(Invoke-WsusDeclinePass @declineParams)
         }
 
         $cleanupParams = @{

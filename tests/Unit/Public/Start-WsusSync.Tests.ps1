@@ -106,6 +106,41 @@ Describe 'Start-WsusSync' {
             { Start-WsusSync -Wait } | Should -Not -Throw
         }
 
+        It 'waits for a sync that the server has not yet reported as running' {
+            $script:fake = New-FakeWsusServer -SyncPolls 2
+            # The first two status checks after the start still say NotProcessing, like a server slow to begin.
+            $script:fake.Subscription | Add-Member -NotePropertyName Lag -NotePropertyValue 2
+            $script:fake.Subscription | Add-Member -MemberType ScriptMethod -Name GetSynchronizationStatus -Force -Value {
+                if ($this.PollsLeft -gt 0 -and $this.Lag -gt 0) { $this.Lag--; return 'NotProcessing' }
+                if ($this.PollsLeft -gt 0) { $this.PollsLeft--; 'Running' } else { 'NotProcessing' }
+            }
+
+            $result = Start-WsusSync -Wait
+
+            $result.Status | Should -Be 'Finished'
+            Should -Invoke -ModuleName WSUS Write-Progress -ParameterFilter { $Status } -Times 2
+        }
+
+        It 'accepts a sync that finished before it was seen running' {
+            $script:fake = New-FakeWsusServer -SyncPolls 0 -LastSyncResult 'Succeeded'
+            # The start replaces the last-sync info with a newer one, as a very fast sync would.
+            $script:fake.Subscription | Add-Member -MemberType ScriptMethod -Name StartSynchronization -Force -Value {
+                $this.Calls.Add('StartSynchronization')
+                $this.SyncInfo = [PSCustomObject] @{ StartTime = [datetime] '2026-10-13T02:00:00'; EndTime = [datetime] '2026-10-13T02:01:00'; Result = 'Succeeded'; Error = $null }
+            }
+
+            $result = Start-WsusSync -Wait
+
+            $result.Status | Should -Be 'Finished'
+            $result.Finished | Should -Be ([datetime] '2026-10-13T02:01:00')
+        }
+
+        It 'throws rather than report the previous sync when the new one never starts' {
+            $script:fake = New-FakeWsusServer -SyncPolls 0 -LastSyncResult 'Succeeded'
+
+            { Start-WsusSync -Wait } | Should -Throw '*did not start*'
+        }
+
         It 'still polls under -Confirm:$false' {
             $script:fake = New-FakeWsusServer -SyncPolls 2
             (Start-WsusSync -Wait -Confirm:$false).Status | Should -Be 'Finished'

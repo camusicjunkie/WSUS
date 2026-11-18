@@ -6,6 +6,17 @@ All notable changes to the WSUS module are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- `Start-WsusSync -Wait` no longer returns before a sync that was just requested has started; it waits for the sync to begin (or throws after a minute) and then for it to finish.
+- `Approve-WsusRing` counts clients that have not reported on an update as not yet installed, so a ring with many silent machines no longer passes the install-percentage gate. The output gains an `Unknown` column.
+- `Set-WsusUpstreamConfig` and the approval rule helper throw on a classification or computer group name that matches nothing, instead of saving an empty list. The rule is validated before it is created.
+- `Set-WsusNodeConfig` throws when `-Domain` is empty or is this machine's name (for example when signed in with a local account), instead of adding `MACHINE\group` to `WSUS Administrators`.
+
+### Changed
+
+- Internal: backtick line continuations replaced with splatting, `StartsWith` replaced with `-like`, and the `Invoke-WsusDeclinePass` pattern comment now says regular expression. Added tests for `Invoke-WsusDeclinePass`, `Set-WsusApprovalRuleDefinition` and `Set-WsusSyncSchedule`.
+
 ## [1.0.0] - 2026-10-19
 
 ### Added

@@ -38,7 +38,8 @@ function Set-WsusNodeConfig {
         # Resource group added to the local 'WSUS Administrators' group.
         [string] $AdminResourceGroup = 'res.srv.wsus.admin',
 
-        # NetBIOS domain name of the admin resource group. Defaults to this machine's domain.
+        # NetBIOS domain name of the admin resource group. Defaults to the domain of the signed-in user, so pass it
+        # when you are signed in with a local account or the account's domain differs from the group's domain.
         [string] $Domain = $env:USERDOMAIN
     )
 
@@ -49,6 +50,10 @@ function Set-WsusNodeConfig {
 
     $nodeFqdn = Get-WsusLocalFqdn
     Test-WsusCertificate -Thumbprint $SslCertThumbprint -RequiredName $VipFqdn, $nodeFqdn
+
+    if ([string]::IsNullOrWhiteSpace($Domain) -or $Domain -eq $env:COMPUTERNAME) {
+        throw "Cannot tell which domain '$AdminResourceGroup' belongs to (got '$Domain', which is this machine). Pass -Domain with the NetBIOS domain name."
+    }
 
     $adminGroupAccount = '{0}\{1}' -f $Domain, $AdminResourceGroup
     $members = (Get-LocalGroupMember -Group 'WSUS Administrators' -ErrorAction SilentlyContinue).Name
