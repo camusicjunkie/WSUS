@@ -98,8 +98,13 @@ function Set-WsusUpstreamConfig {
     $subscription = $wsus.GetSubscription()
     $products = New-Object -TypeName 'Microsoft.UpdateServices.Administration.UpdateCategoryCollection'
     $wsus.GetUpdateCategories() | Where-Object { $_.Title -in $Product } | ForEach-Object { $null = $products.Add($_) }
+    $matchedClassifications = @($wsus.GetUpdateClassifications() | Where-Object { $_.Title -in $Classification })
+    $missingClassifications = @($Classification | Where-Object { $_ -notin $matchedClassifications.Title })
+    if ($missingClassifications.Count -gt 0) {
+        throw "Classification not found: $($missingClassifications -join ', ')."
+    }
     $classifications = New-Object -TypeName 'Microsoft.UpdateServices.Administration.UpdateClassificationCollection'
-    $wsus.GetUpdateClassifications() | Where-Object { $_.Title -in $Classification } | ForEach-Object { $null = $classifications.Add($_) }
+    $matchedClassifications | ForEach-Object { $null = $classifications.Add($_) }
 
     $subscription.SetUpdateCategories($products)
     $subscription.SetUpdateClassifications($classifications)

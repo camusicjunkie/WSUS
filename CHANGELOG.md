@@ -6,10 +6,18 @@ All notable changes to the WSUS module are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- `Start-WsusSync -Wait` no longer returns before a sync that was just requested has started; it waits for the sync to begin (or throws after a minute) and then for it to finish.
+- `Approve-WsusRing` counts clients that have not reported on an update as not yet installed, so a ring with many silent machines no longer passes the install-percentage gate. The output gains an `Unknown` column.
+- `Set-WsusUpstreamConfig` and the approval rule helper throw on a classification or computer group name that matches nothing, instead of saving an empty list. The rule is validated before it is created.
+- `Set-WsusNodeConfig` throws when `-Domain` is empty or is this machine's name (for example when signed in with a local account), instead of adding `MACHINE\group` to `WSUS Administrators`.
+
 ### Changed
 
 - README section 7: added `AU\UseUpdateClassPolicySource` (needed when the per-class scan source is set) to the common GPO settings, a "Clients without a GPO" table of the registry values a Packer or scripted client needs, a client check, and image-sealing steps for the WSUS client identity. `DisableDualScan` is no longer listed (not supported on Windows 11).
 - README: the NetScaler design note now says why the VIP stays active/passive and that both 8530 and 8531 must pass.
+- Internal: backtick line continuations replaced with splatting, `StartsWith` replaced with `-like`, and the `Invoke-WsusDeclinePass` pattern comment now says regular expression. Added tests for `Invoke-WsusDeclinePass`, `Set-WsusApprovalRuleDefinition` and `Set-WsusSyncSchedule`.
 
 ## [1.0.0] - 2026-10-19
 

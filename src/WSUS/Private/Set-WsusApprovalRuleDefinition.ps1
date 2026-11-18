@@ -27,6 +27,19 @@ function Set-WsusApprovalRuleDefinition {
         [string[]] $GroupName
     )
 
+    # Resolve every name first so a typo throws before a rule is created or changed.
+    $matchedClassifications = @($Wsus.GetUpdateClassifications() | Where-Object { $_.Title -in $ClassificationTitle })
+    $missingClassifications = @($ClassificationTitle | Where-Object { $_ -notin $matchedClassifications.Title })
+    if ($missingClassifications.Count -gt 0) {
+        throw "Classification not found for rule '$Name': $($missingClassifications -join ', ')."
+    }
+
+    $matchedGroups = @($Wsus.GetComputerTargetGroups() | Where-Object { $_.Name -in $GroupName })
+    $missingGroups = @($GroupName | Where-Object { $_ -notin $matchedGroups.Name })
+    if ($missingGroups.Count -gt 0) {
+        throw "Computer group not found for rule '$Name': $($missingGroups -join ', ')."
+    }
+
     $rule = $Wsus.GetInstallApprovalRules() | Where-Object { $_.Name -eq $Name }
     $isNew = -not $rule
     if ($isNew) {
@@ -34,11 +47,11 @@ function Set-WsusApprovalRuleDefinition {
     }
 
     $classifications = New-Object -TypeName 'Microsoft.UpdateServices.Administration.UpdateClassificationCollection'
-    $Wsus.GetUpdateClassifications() | Where-Object { $_.Title -in $ClassificationTitle } | ForEach-Object { $null = $classifications.Add($_) }
+    $matchedClassifications | ForEach-Object { $null = $classifications.Add($_) }
     $rule.SetUpdateClassifications($classifications)
 
     $targets = New-Object -TypeName 'Microsoft.UpdateServices.Administration.ComputerTargetGroupCollection'
-    $Wsus.GetComputerTargetGroups() | Where-Object { $_.Name -in $GroupName } | ForEach-Object { $null = $targets.Add($_) }
+    $matchedGroups | ForEach-Object { $null = $targets.Add($_) }
     $rule.SetComputerTargetGroups($targets)
 
     if ($isNew) {
